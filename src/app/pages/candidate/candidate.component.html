@@ -1,0 +1,105 @@
+<div class="page">
+  <a class="back-link" routerLink="/find-people">
+    <app-icon name="arrow-left" [size]="18" /> Back to suggestions
+  </a>
+
+  @if (loading()) {
+    <div class="state card" role="status"><span class="spinner"></span> Loading profile...</div>
+  } @else if (error()) {
+    <app-error-box [error]="error()!" (retry)="load()" />
+  } @else {
+    @let m = match();
+    <section class="card header-card" aria-labelledby="cand-name">
+      <span class="avatar avatar-lg" aria-hidden="true">{{ avatar() }}</span>
+      <div class="header-main">
+        <h1 id="cand-name" class="page-title">{{ name() || 'Candidate' }}</h1>
+        <p class="muted">
+          {{ code() }}
+          @if (m?.designation) { · {{ m?.designation }} }
+          @if (m?.department) { · {{ m?.department }} }
+          @if (m?.total_experience_years !== null && m?.total_experience_years !== undefined) { · {{ m?.total_experience_years }} years experience }
+        </p>
+        @if (m?.availability) { <div><span class="pill" [class]="availability().css">{{ availability().label }}</span></div> }
+      </div>
+      @if (m) {
+        <div class="score">
+          <app-score-ring [score]="m.overall_score" [category]="m.match_category" [size]="88" />
+          <span class="pill" [class]="category().css">{{ category().label }}</span>
+        </div>
+      }
+    </section>
+
+    @if (!m) {
+      <p class="state">Open this person from Find People (AI) or a project's matches to see the score and decision buttons.</p>
+    }
+
+    @if (m?.explanation) {
+      <section class="card card-navy plain" aria-labelledby="plain-title">
+        <h2 id="plain-title" class="section-title">In plain words</h2>
+        <p>{{ m?.explanation }}</p>
+      </section>
+    }
+
+    <section class="card" aria-labelledby="skills-title">
+      <h2 id="skills-title" class="section-title">Skill gaps</h2>
+      @if (reportError()) {
+        <app-error-box [error]="reportError()!" (retry)="loadReport()" />
+      } @else if (!report()) {
+        <div class="state" role="status"><span class="spinner"></span> Loading skills...</div>
+      } @else if (rows().length === 0) {
+        <p class="state">No skill gaps for this project.</p>
+      } @else {
+        <ul class="list skill-rows">
+          @for (r of rows(); track r.name) {
+            <li class="skill-row">
+              <div class="skill-top">
+                <span class="list-title">{{ r.name }}</span>
+                <span class="muted small">{{ r.mandatory ? 'Must-have' : 'Nice to have' }}</span>
+                <span class="spacer"></span>
+                <span class="status" [class]="r.state">{{ statusText(r) }}</span>
+              </div>
+              @if (r.level !== null) {
+                <div class="bar" role="img" [attr.aria-label]="r.name + ': level ' + r.level + ' of 5' + (r.required ? ', needs ' + r.required : '')">
+                  <span class="bar-fill" [class.ok]="r.state === 'meets'" [style.width.%]="(r.level / 5) * 100"></span>
+                  @if (r.required) { <span class="bar-tick" [style.left.%]="(r.required / 5) * 100"></span> }
+                </div>
+              }
+              @if (r.note) { <p class="muted small">{{ r.note }}</p> }
+            </li>
+          }
+        </ul>
+        <p class="hint">The bar shows their level out of 5. The dark mark is the level the project needs.</p>
+      }
+      @if (transferable().length) {
+        <div class="chip-list transfer">
+          <span class="chip-list-label">Related skills:</span>
+          @for (s of transferable(); track $index) { <span class="chip">{{ s }}</span> }
+        </div>
+      }
+    </section>
+
+    <section class="card" aria-labelledby="learn-title">
+      <div class="card-head">
+        <h2 id="learn-title" class="section-title">Suggested learning</h2>
+      </div>
+      @if (report() && recommendations().length === 0) {
+        <div class="state empty-learn">
+          <span>No learning plan yet.</span>
+          <button type="button" class="btn btn-primary btn-sm" [disabled]="generating()" (click)="generate()">
+            @if (generating()) { <span class="spinner"></span> } @else { <app-icon name="sparkle" [size]="16" /> }
+            Generate with AI
+          </button>
+        </div>
+      } @else if (report()) {
+        <app-learning-list [items]="recommendations()" (changed)="onRecommendationChanged($event)" />
+      }
+    </section>
+
+    <div class="actions">
+      <a class="btn btn-lg" routerLink="/find-people">Back to list</a>
+      @if (m && requirementId()) {
+        <app-decision-controls [match]="m" [requirementId]="requirementId()!" (changed)="onMatchChanged($event)" />
+      }
+    </div>
+  }
+</div>

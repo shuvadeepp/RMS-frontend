@@ -1,0 +1,18 @@
+<nav class="navbar navbar-expand bg-dark navbar-dark px-3">
+  <span class="navbar-brand">RMS</span>
+
+  <ul class="navbar-nav me-auto">
+    <li class="nav-item">
+      <a class="nav-link" routerLink="/employees" routerLinkActive="active">All Employees</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" routerLink="/search" routerLinkActive="active">Search</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" routerLink="/match" routerLinkActive="active">AI Matching</a>
+    </li>
+  </ul>
+
+  <span class="text-light me-3 d-none d-sm-inline">{{ authService.getUsername() }}</span>
+  <button class="btn btn-outline-light btn-sm" (click)="logout()">Logout</button>
+</nav>

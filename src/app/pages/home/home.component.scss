@@ -1,0 +1,22 @@
+.action {
+  display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: var(--ink);
+  transition: border-color .15s;
+  &:hover { border-color: var(--primary); }
+  &:focus-visible { border-radius: var(--radius-card); }
+}
+.action-icon {
+  width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--primary-tint); color: var(--primary-dark); margin-bottom: 6px;
+}
+.action-title { font-size: 17px; font-weight: 800; }
+.action-text { color: var(--muted); font-size: 14px; flex: 1; }
+.action-go { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-size: 14px; color: var(--primary-dark); margin-top: 6px; }
+
+.action-primary {
+  background: var(--primary); border-color: var(--primary); color: #fff;
+  &:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+  .action-icon { background: rgba(255, 255, 255, .18); color: #fff; }
+  .action-text, .action-go { color: #fff; }
+}
+
+.runs-title { margin-bottom: 14px; }

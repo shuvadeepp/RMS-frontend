@@ -1,0 +1,160 @@
+<h2 class="h4 mb-1">AI Requirement Matching</h2>
+<p class="text-muted small mb-3">
+  Scores employees against the required skills using the AI model. This can take a few minutes.
+  Entering both a project name and a joining date also saves the requirement.
+</p>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <form (ngSubmit)="findMatches()">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="projectName" class="form-label">Project name</label>
+          <input id="projectName" name="projectName" class="form-control" [(ngModel)]="projectName">
+        </div>
+        <div class="col-md-6">
+          <label for="joiningDate" class="form-label">Joining date</label>
+          <input id="joiningDate" name="joiningDate" type="date" class="form-control" [(ngModel)]="joiningDate">
+        </div>
+
+        <div class="col-md-4">
+          <label for="designation" class="form-label">Designation</label>
+          <select id="designation" name="designation" class="form-select" [(ngModel)]="designation">
+            <option value="">Any</option>
+            @for (item of designations; track item) {
+              <option [value]="item">{{ item }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="department" class="form-label">Department</label>
+          <select id="department" name="department" class="form-select" [(ngModel)]="department">
+            <option value="">Any</option>
+            @for (item of departments; track item) {
+              <option [value]="item">{{ item }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="minExp" class="form-label">Min. experience (years)</label>
+          <input id="minExp" name="minExp" type="number" min="0" step="0.5" class="form-control"
+                 [(ngModel)]="minimumExperience">
+        </div>
+
+        <div class="col-md-4">
+          <label for="headcount" class="form-label">Headcount</label>
+          <input id="headcount" name="headcount" type="number" min="1" class="form-control"
+                 [(ngModel)]="headcount">
+        </div>
+        <div class="col-md-4">
+          <label for="priority" class="form-label">Priority</label>
+          <select id="priority" name="priority" class="form-select" [(ngModel)]="priority">
+            <option value="">-</option>
+            @for (item of priorities; track item) {
+              <option [value]="item">{{ item }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <h3 class="h6 mt-4">Required skills</h3>
+      @for (row of requiredSkills; track $index; let i = $index) {
+        <div class="row g-2 align-items-center mb-2">
+          <div class="col-md-5">
+            <select class="form-select" [name]="'skill' + i" [(ngModel)]="row.skill_name">
+              <option value="">Choose skill...</option>
+              @for (skill of skills; track skill) {
+                <option [value]="skill">{{ skill }}</option>
+              }
+            </select>
+          </div>
+          <div class="col-md-3">
+            <select class="form-select" [name]="'proficiency' + i" [(ngModel)]="row.minimum_proficiency">
+              @for (level of [1, 2, 3, 4, 5]; track level) {
+                <option [ngValue]="level">Min. proficiency {{ level }}</option>
+              }
+            </select>
+          </div>
+          <div class="col-md-2">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" [id]="'mandatory' + i"
+                     [name]="'mandatory' + i" [(ngModel)]="row.mandatory">
+              <label class="form-check-label" [for]="'mandatory' + i">Mandatory</label>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger btn-sm"
+                    (click)="removeSkillRow(i)" [disabled]="requiredSkills.length === 1">
+              Remove
+            </button>
+          </div>
+        </div>
+      }
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="addSkillRow()">+ Add skill</button>
+
+      <div class="mt-4">
+        <button type="submit" class="btn btn-primary" [disabled]="loading || !hasSelectedSkill()">
+          {{ loading ? 'Matching... (this can take a while)' : 'Find matches' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+@if (errorMessage) {
+  <div class="alert alert-danger">{{ errorMessage }}</div>
+}
+
+@if (response) {
+  <div class="alert alert-info">
+    {{ response.message }}
+    @if (response.requirement_id) {
+      <br><small>Requirement #{{ response.requirement_id }} saved ({{ response.requirement_status }}).</small>
+    }
+    @if (response.employees_sent != null) {
+      <br><small>{{ response.employees_sent }} employee(s) were sent for scoring.</small>
+    }
+  </div>
+
+  @if (response.llm_result; as result) {
+    <h3 class="h5">{{ result.total_qualified_matches }} qualified match(es)</h3>
+
+    @for (match of result.matches; track match.employee_code) {
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h4 class="h6 mb-1">{{ match.resource_name }}
+                <span class="text-muted small">({{ match.employee_code }})</span>
+              </h4>
+              <div class="text-muted small">{{ match.total_experience_years }} yrs experience</div>
+            </div>
+            <div class="text-end">
+              <span class="badge fs-6" [class]="scoreClass(match)">{{ match.match_score }}</span>
+              <div class="small">{{ match.category }}</div>
+            </div>
+          </div>
+
+          <p class="mt-2 mb-2">{{ match.explanation }}</p>
+
+          <div class="small">
+            <strong>Matching:</strong>
+            @for (skill of match.matching_skills; track $index) {
+              <span class="badge text-bg-success me-1">{{ skillLabel(skill) }}</span>
+            } @empty { <span class="text-muted">none</span> }
+          </div>
+          <div class="small mt-1">
+            <strong>Missing:</strong>
+            @for (skill of match.missing_skills; track $index) {
+              <span class="badge text-bg-danger me-1">{{ skillLabel(skill) }}</span>
+            } @empty { <span class="text-muted">none</span> }
+          </div>
+        </div>
+      </div>
+    } @empty {
+      <p class="text-muted">No qualified matches.</p>
+    }
+
+    <p class="text-muted small fst-italic">{{ result.note }}</p>
+  }
+}

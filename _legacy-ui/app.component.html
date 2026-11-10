@@ -1,0 +1,8 @@
+@if (authService.isLoggedIn()) {
+  <app-navbar />
+  <main class="container-fluid py-4 px-3 px-md-4">
+    <router-outlet />
+  </main>
+} @else {
+  <router-outlet />
+}

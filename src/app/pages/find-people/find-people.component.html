@@ -1,0 +1,358 @@
+<div class="page">
+  <!-- Running: the live scan console replaces the page until results open -->
+  @if (showConsole()) {
+    <app-scan-console
+      [phase]="consolePhase()"
+      [runId]="state.runId()"
+      [run]="state.run()"
+      [employeesSent]="state.employeesSent()"
+      [skills]="consoleSkills()"
+      [requirementSaved]="state.requirementId() !== null"
+      [startedAt]="state.runStartedAt()" />
+  } @else {
+  <header>
+    <p class="eyebrow">Find people</p>
+    <h1 class="page-title">Who is the right person for your project?</h1>
+  </header>
+
+  <ol class="steps" aria-label="Progress">
+    @for (label of ['Tell us the need', 'AI suggests people', 'You decide']; track label; let i = $index) {
+      <li class="step" [class.done]="step() > i + 1" [class.current]="step() === i + 1"
+          [attr.aria-current]="step() === i + 1 ? 'step' : null">
+        <span class="step-num">{{ i + 1 }}</span>
+        <span>{{ label }}</span>
+      </li>
+    }
+  </ol>
+
+  <!-- Step 1: the need -->
+  <form class="card need" (ngSubmit)="submit()" novalidate aria-labelledby="need-title">
+    <div class="card-head">
+      <h2 id="need-title" class="section-title">1. Tell us the need</h2>
+      @if (prefillLoading()) { <span class="row muted small"><span class="spinner"></span> Loading project...</span> }
+    </div>
+
+    <div class="grid grid-3">
+      <div class="field">
+        <label for="project">Project name <span class="req" aria-hidden="true">*</span></label>
+        <div class="project-row">
+          <select id="project" name="project" class="select" required aria-required="true"
+                  [class.invalid]="fieldMessage('project')" [attr.aria-invalid]="fieldMessage('project') ? true : null"
+                  [ngModel]="selectedProject()?.projectId ?? null" (ngModelChange)="selectProject($event)" (blur)="touch('project')"
+                  [attr.aria-describedby]="(selectedProject() ? 'project-code ' : '') + (fieldMessage('project') ? 'err-project' : '') || null">
+            <option [ngValue]="null">Choose a project</option>
+            @for (p of projects(); track p.projectId) { <option [ngValue]="p.projectId">{{ p.projectName }}</option> }
+          </select>
+          @if (selectedProject(); as p) { <span id="project-code" class="muted small project-code">{{ p.projectCode }}</span> }
+        </div>
+        @if (fieldMessage('project')) { <p id="err-project" class="field-error">{{ fieldMessage('project') }}</p> }
+      </div>
+      <div class="field">
+        <label for="joining">Needed from <span class="req" aria-hidden="true">*</span></label>
+        <app-date-picker inputId="joining" name="joining" [required]="true"
+               [invalid]="!!fieldMessage('date')" [describedBy]="fieldMessage('date') ? 'err-date' : null"
+               [ngModel]="draft().joiningDate" (ngModelChange)="patch({ joiningDate: $event ?? '' }, 'date')" (touched)="touch('date')" />
+        @if (fieldMessage('date')) { <p id="err-date" class="field-error">{{ fieldMessage('date') }}</p> }
+      </div>
+      <div class="field">
+        <label for="exp">Minimum experience <span class="req" aria-hidden="true">*</span></label>
+        <select id="exp" name="exp" class="select" required aria-required="true"
+                [class.invalid]="fieldMessage('experience')" [attr.aria-invalid]="fieldMessage('experience') ? true : null"
+                [attr.aria-describedby]="fieldMessage('experience') ? 'err-exp' : null"
+                [ngModel]="draft().minExperience" (ngModelChange)="patch({ minExperience: $event }, 'experience')" (blur)="touch('experience')">
+          <option [ngValue]="null" disabled>Choose experience</option>
+          @for (y of experienceOptions; track y) {
+            <option [ngValue]="y">{{ y === 0 ? '0 years (fresher)' : y + '+ ' + (y === 1 ? 'year' : 'years') }}</option>
+          }
+        </select>
+        @if (fieldMessage('experience')) { <p id="err-exp" class="field-error">{{ fieldMessage('experience') }}</p> }
+      </div>
+    </div>
+
+    <fieldset class="skills">
+      <legend class="label">Skills <span class="req" aria-hidden="true">*</span>
+        <span class="hint">Tap a skill to switch between must-have and nice to have.</span>
+      </legend>
+      <div class="chip-list">
+        @for (skill of draft().skills; track skill.skill_name; let i = $index) {
+          <span class="skill-chip" [class.must]="skill.mandatory">
+            <button type="button" class="skill-toggle" [attr.aria-pressed]="skill.mandatory" (click)="toggleMandatory(i)">
+              {{ skill.skill_name }} · Level {{ skill.minimum_proficiency }}+
+              @if (skill.mandatory) { <span class="must-tag">MUST</span> }
+            </button>
+            <button type="button" class="skill-remove" (click)="removeSkill(i)">
+              <app-icon name="x" [size]="16" /><span class="sr-only">Remove {{ skill.skill_name }}</span>
+            </button>
+          </span>
+        }
+        @if (!addOpen()) {
+          <button type="button" class="btn btn-sm add-btn" (click)="addOpen.set(true)">
+            <app-icon name="plus" [size]="16" /> Add skill
+          </button>
+        }
+      </div>
+
+      @if (addOpen()) {
+        <div class="add-row">
+          <div class="field">
+            <label for="new-skill">Skill</label>
+            <select id="new-skill" name="newSkill" class="select" [ngModel]="newSkill()" (ngModelChange)="newSkill.set($event)">
+              <option value="">Choose a skill</option>
+              @for (s of availableSkills(); track s.skillName) { <option [value]="s.skillName">{{ s.skillName }}</option> }
+            </select>
+          </div>
+          <div class="field level">
+            <label for="new-level">Level</label>
+            <select id="new-level" name="newLevel" class="select" [ngModel]="newLevel()" (ngModelChange)="newLevel.set(+$event)">
+              @for (l of levels; track l) { <option [ngValue]="l">{{ l }}+</option> }
+            </select>
+          </div>
+          <button type="button" class="btn btn-primary" [disabled]="!newSkill()" (click)="addSkill()">Add</button>
+          <button type="button" class="btn btn-ghost" (click)="cancelAdd()">Cancel</button>
+        </div>
+        @if (skillOptions().length === 0) { <p class="hint">Skill list could not be loaded.</p> }
+      }
+      @if (fieldMessage('skills')) { <p id="err-skills" class="field-error">{{ fieldMessage('skills') }}</p> }
+    </fieldset>
+
+    <div>
+      <button type="button" class="link-btn" (click)="moreFilters.set(!moreFilters())"
+              [attr.aria-expanded]="moreFilters()" aria-controls="more-filters">
+        {{ moreFilters() ? 'Fewer filters' : 'More filters' }}
+      </button>
+      @if (moreFilters()) {
+        <div id="more-filters" class="grid grid-2 more">
+          <div class="field">
+            <label for="designation">Designation</label>
+            <select id="designation" name="designation" class="select"
+                    [ngModel]="draft().designation" (ngModelChange)="patch({ designation: $event })">
+              <option value="">Any</option>
+              @for (d of designations(); track d.designationName) { <option [value]="d.designationName">{{ d.designationName }}</option> }
+            </select>
+            @if (fieldMessage('designation')) { <p class="field-error">{{ fieldMessage('designation') }}</p> }
+          </div>
+          <div class="field">
+            <label for="department">Department</label>
+            <select id="department" name="department" class="select"
+                    [ngModel]="draft().department" (ngModelChange)="patch({ department: $event })">
+              <option value="">Any</option>
+              @for (d of departments(); track d.departmentName) { <option [value]="d.departmentName">{{ d.departmentName }}</option> }
+            </select>
+            @if (fieldMessage('department')) { <p class="field-error">{{ fieldMessage('department') }}</p> }
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="submit-row">
+      <div class="hints">
+        <p class="hint">Only skills and experience are sent to the AI.</p>
+        @if (missingText()) { <p class="save-hint" id="missing-hint"><app-icon name="alert" [size]="16" /> Missing: {{ missingText() }}</p> }
+      </div>
+      <div class="submit-actions">
+        <button type="button" class="btn btn-lg" [disabled]="busy()" (click)="clearFilters()">
+          <app-icon name="x" /> Clear
+        </button>
+        <button type="submit" class="btn btn-primary btn-lg" [disabled]="busy() || !formValid()"
+                [attr.aria-describedby]="missingText() ? 'missing-hint' : null">
+          <app-icon name="sparkle" /> Find best people
+        </button>
+      </div>
+    </div>
+  </form>
+  }
+
+  @if (phase() === 'loading-employees') {
+    <div class="card state" role="status"><span class="spinner"></span> Loading employees...</div>
+  }
+
+  @if (error(); as err) {
+    <app-error-box [error]="err" (retry)="retry()" />
+  }
+
+  <!-- Step 2: saved AI matches -->
+  @if (state.mode() === 'matches' && !busy()) {
+    <section class="results" aria-labelledby="results-title">
+      <div class="results-head">
+        <h2 id="results-title" class="section-title">
+          AI suggestions · {{ matches().length }} {{ matches().length === 1 ? 'person' : 'people' }} found
+          @if (poolSize() !== null) { from {{ poolSize() }} }
+        </h2>
+        <div class="chip-list">
+          @for (c of categoryCounts(); track c.info.key) {
+            <span class="pill" [class]="c.info.css">{{ c.count }} {{ c.info.label }}</span>
+          }
+        </div>
+      </div>
+
+      @if (state.run()?.run_status === 'COMPLETED_WITH_ERRORS') {
+        <p class="notice"><app-icon name="alert" [size]="18" /> {{ state.run()?.error_message || 'Some candidates could not be scored by the AI.' }}</p>
+      }
+
+      @if (matches().length > 0) {
+        <div class="tabs" role="group" aria-label="Filter by status">
+          @for (t of tabs(); track t.key) {
+            <button type="button" class="tab" [class.active]="tab() === t.key" [attr.aria-pressed]="tab() === t.key" (click)="tab.set(t.key)">
+              {{ t.label }} <span class="tab-count">{{ t.count }}</span>
+            </button>
+          }
+        </div>
+      }
+
+      @if (matches().length === 0) {
+        <div class="card state">No one matched this need. Try fewer must-have skills or a lower level.</div>
+      } @else if (visibleMatches().length === 0) {
+        <div class="card state">Nobody in this group yet.</div>
+      }
+
+      @for (m of visibleMatches(); track m.matching_result_id; let i = $index) {
+        @let cat = categoryOf(m.overall_score, m.match_category);
+        @let st = statusInfo(m);
+        @let av = availabilityOf(m.availability);
+        <article class="card result" [attr.aria-labelledby]="'name-' + m.matching_result_id">
+          <div class="score-col">
+            <app-score-ring [score]="m.overall_score" [category]="m.match_category" [size]="76" />
+            <span class="pill" [class]="cat.css">{{ cat.label }}</span>
+          </div>
+          <div class="result-body">
+            <div class="row">
+              <span class="muted small">#{{ m.rank_position ?? i + 1 }} · {{ m.employee_code }}</span>
+              <span class="spacer"></span>
+              <span class="pill" [class]="st.css">{{ st.label }}</span>
+            </div>
+            <h3 class="result-name" [id]="'name-' + m.matching_result_id">{{ m.resource_name }}</h3>
+            <div class="row small">
+              @if (m.designation) { <span>{{ m.designation }}</span> }
+              @if (m.total_experience_years !== null && m.total_experience_years !== undefined) { <span class="muted">· {{ m.total_experience_years }} years</span> }
+              @if (m.availability) { <span class="pill" [class]="av.css">{{ av.label }}</span> }
+            </div>
+            @let mt = tagsOf(m);
+            @if (mt.tags.length) {
+              <div class="chip-list">
+                @for (t of mt.tags; track $index) { <app-tag-badge [tag]="t.tag" [reason]="t.reason" [freePercent]="mt.free" /> }
+              </div>
+            }
+
+            @if (m.explanation) {
+              <div class="why"><strong>Why the AI picked this person:</strong> {{ m.explanation }}</div>
+            }
+            @if (hasSkills(m).length) {
+              <div class="chip-list">
+                <span class="chip-list-label">Has:</span>
+                @for (s of hasSkills(m); track $index) { <span class="chip chip-has">{{ s }}</span> }
+              </div>
+            }
+            @if (needsSkills(m).length) {
+              <div class="chip-list">
+                <span class="chip-list-label">Needs:</span>
+                @for (s of needsSkills(m); track $index) { <span class="chip chip-needs">{{ s }}</span> }
+              </div>
+            }
+
+            <app-decision-controls [match]="m" [requirementId]="state.requirementId()!" (changed)="onChanged($event)" />
+            <a class="details-link" [routerLink]="['/candidate', m.matching_result_id]"
+               [queryParams]="{ requirementId: state.requirementId() }">View full details <app-icon name="arrow-right" [size]="16" /></a>
+          </div>
+        </article>
+      }
+    </section>
+
+    @if (matches().length > 0) {
+      <div class="card card-navy decide-bar">
+        <p>
+          <strong>{{ state.shortlistedCount() }} shortlisted.</strong>
+          The AI only suggests. Nobody is allocated until you approve.
+        </p>
+        <button type="button" class="btn btn-primary btn-lg" (click)="sendForReview()">
+          Send for review <app-icon name="arrow-right" [size]="18" />
+        </button>
+      </div>
+    }
+  }
+
+  <!-- Preview: skills without project and date -->
+  @if (state.mode() === 'preview' && !busy()) {
+    <section class="results" aria-labelledby="preview-title">
+      <h2 id="preview-title" class="section-title">AI preview · {{ state.preview().length }} {{ state.preview().length === 1 ? 'person' : 'people' }}</h2>
+      <p class="notice"><app-icon name="alert" [size]="18" /> Preview only, not saved. Add a project name and date to save results and shortlist.</p>
+      @if (state.preview().length === 0) { <div class="card state">No one matched this need.</div> }
+      @for (p of state.preview(); track p.employee_code; let i = $index) {
+        @let cat = categoryOf(p.match_score, null);
+        <article class="card result">
+          @if (p.match_score !== null && p.match_score !== undefined) {
+            <div class="score-col">
+              <app-score-ring [score]="p.match_score" [size]="76" />
+              <span class="pill" [class]="cat.css">{{ cat.label }}</span>
+            </div>
+          }
+          <div class="result-body">
+            <span class="muted small">#{{ i + 1 }} · {{ p.employee_code }}</span>
+            <h3 class="result-name">{{ p.resource_name }}</h3>
+            @let pt = tagsOf(p);
+            @if (pt.tags.length) {
+              <div class="chip-list">
+                @for (t of pt.tags; track $index) { <app-tag-badge [tag]="t.tag" [reason]="t.reason" [freePercent]="pt.free" /> }
+              </div>
+            }
+            @if (p.explanation) { <div class="why"><strong>Why the AI picked this person:</strong> {{ p.explanation }}</div> }
+            @if (hasSkills(p).length) {
+              <div class="chip-list"><span class="chip-list-label">Has:</span>
+                @for (s of hasSkills(p); track $index) { <span class="chip chip-has">{{ s }}</span> }
+              </div>
+            }
+            @if (needsSkills(p).length) {
+              <div class="chip-list"><span class="chip-list-label">Needs:</span>
+                @for (s of needsSkills(p); track $index) { <span class="chip chip-needs">{{ s }}</span> }
+              </div>
+            }
+          </div>
+        </article>
+      }
+    </section>
+  }
+
+  <!-- Tagged people left out of this search (only when the response has "tagged_people") -->
+  @if ((state.mode() === 'matches' || state.mode() === 'preview') && !busy() && tagged(); as tp) {
+    <section class="tagged" aria-label="Tagged people">
+      <p class="muted small window-line">
+        <app-icon name="calendar" [size]="16" />
+        Availability checked for {{ formatDayMonYear(tp.window?.from) }} to {{ tp.window?.to ? formatDayMonYear(tp.window?.to) : 'open-ended' }}
+      </p>
+      @if (excludedCount() > 0) {
+        <details class="card excluded">
+          <summary>
+            <app-icon name="tag" [size]="18" />
+            {{ excludedCount() }} {{ excludedCount() === 1 ? 'person' : 'people' }} excluded from this search (tagged)
+            <app-icon class="chevron" name="chevron-down" [size]="18" />
+          </summary>
+          <ul class="list excluded-list">
+            @for (e of tp.excluded ?? []; track $index) {
+              <li class="list-item">
+                <div class="list-main">
+                  <p class="list-title">{{ e.resource_name || '-' }}</p>
+                  <p class="muted small">{{ e.employee_code || '-' }}</p>
+                </div>
+                <div class="chip-list">
+                  @for (t of e.tags ?? []; track $index) { <app-tag-badge [tag]="t.tag" [reason]="t.reason" [freePercent]="e.window_free_percentage" /> }
+                </div>
+              </li>
+            }
+          </ul>
+          <a class="details-link" routerLink="/tagged-people">Manage tagged people <app-icon name="arrow-right" [size]="16" /></a>
+        </details>
+      }
+    </section>
+  }
+
+  <!-- Employee list: empty form or filters only -->
+  @if (state.mode() === 'employees' && !busy()) {
+    <section class="results" aria-labelledby="emp-title">
+      <h2 id="emp-title" class="section-title">{{ state.employees().length }} {{ state.employees().length === 1 ? 'employee' : 'employees' }}</h2>
+      <p class="notice info"><app-icon name="alert" [size]="18" /> No skills chosen, so the AI was not used. Add skills to get scored suggestions.</p>
+      @if (state.employees().length === 0) { <div class="card state">Nobody matches these filters.</div> }
+      <div class="emp-grid">
+        @for (e of state.employees(); track e.code) { <app-employee-card [employee]="e" /> }
+      </div>
+    </section>
+  }
+</div>

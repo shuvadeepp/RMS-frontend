@@ -1,0 +1,86 @@
+<div class="page">
+  <header>
+    <p class="eyebrow">Home</p>
+    <h1 class="page-title">Welcome back{{ firstName() ? ', ' + firstName() : '' }}. What would you like to do?</h1>
+  </header>
+
+  <div class="grid grid-3">
+    @for (a of actions; track a.link) {
+      <a class="card action" [class.action-primary]="a.primary" [routerLink]="a.link">
+        <span class="action-icon"><app-icon [name]="a.icon" [size]="22" /></span>
+        <span class="action-title">{{ a.title }}</span>
+        <span class="action-text">{{ a.text }}</span>
+        <span class="action-go">Open <app-icon name="arrow-right" [size]="16" /></span>
+      </a>
+    }
+  </div>
+
+  @if (summaryError(); as err) {
+    <app-error-box [error]="err" (retry)="loadSummary()" />
+  } @else {
+    <div class="grid grid-4">
+      @for (t of tiles(); track t.label) {
+        <div class="card tile">
+          @if (summary()) { <span class="tile-value">{{ t.value ?? 0 }}</span> }
+          @else { <span class="spinner" role="status" aria-label="Loading"></span> }
+          <span class="tile-label">{{ t.label }}</span>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- "Projects that need people" and "Recent matching runs" hidden for now.
+  <section class="card" aria-labelledby="needs-title">
+    <div class="card-head">
+      <h2 id="needs-title" class="section-title">Projects that need people</h2>
+      <a class="btn btn-sm" routerLink="/projects">All projects</a>
+    </div>
+    @if (requirements() === null) {
+      <div class="state" role="status"><span class="spinner"></span> Loading projects...</div>
+    } @else if (requirementsError()) {
+      <app-error-box [error]="requirementsError()!" (retry)="loadRequirements()" />
+    } @else if (requirements()!.length === 0) {
+      <div class="state">No open projects. Start one with Find People (AI).</div>
+    } @else {
+      <ul class="list">
+        @for (r of requirements(); track r.requirement_id) {
+          <li class="list-item">
+            <div class="list-main">
+              <p class="list-title">{{ r.project_name || 'Requirement #' + r.requirement_id }}</p>
+              <p class="muted small">{{ skillsLine(r) }}</p>
+            </div>
+            @if (r.joining_date) {
+              <span class="muted small row"><app-icon name="calendar" [size]="16" /> {{ formatDate(r.joining_date) }}</span>
+            }
+            <span class="pill" [class]="statusPill(statusOf(r))">{{ humanise(statusOf(r)) }}</span>
+            <a class="btn btn-sm" routerLink="/find-people" [queryParams]="{ requirementId: r.requirement_id }">Find people</a>
+            <a class="btn btn-sm" routerLink="/decisions" [queryParams]="{ requirementId: r.requirement_id }">See matches</a>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  @if (recentRuns().length) {
+    <section class="card" aria-labelledby="runs-title">
+      <h2 id="runs-title" class="section-title runs-title">Recent matching runs</h2>
+      <ul class="list">
+        @for (run of recentRuns(); track run.matching_run_id) {
+          <li class="list-item">
+            <div class="list-main">
+              <p class="list-title">{{ run.project_name || 'Requirement #' + run.requirement_id }}</p>
+              <p class="muted small">
+                Run #{{ run.matching_run_id }}
+                @if (run.execution_date) { · {{ formatDateTime(run.execution_date) }} }
+                @if (run.result_count !== null && run.result_count !== undefined) { · {{ run.result_count }} results }
+              </p>
+            </div>
+            <span class="pill" [class]="statusPill(run.run_status)">{{ humanise(run.run_status) }}</span>
+            <a class="btn btn-sm" routerLink="/decisions" [queryParams]="{ requirementId: run.requirement_id }">See matches</a>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+  -->
+</div>

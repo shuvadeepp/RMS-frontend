@@ -5,7 +5,11 @@
   "projects": {
     "rms-frontend": {
       "projectType": "application",
-      "schematics": {},
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
       "root": "",
       "sourceRoot": "src",
       "prefix": "app",
@@ -27,22 +31,23 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.scss"
             ],
-            "scripts": []
+            "scripts": [],
+            "inlineStyleLanguage": "scss"
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
+                  "maximumWarning": "700kB",
                   "maximumError": "1MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "6kB",
+                  "maximumError": "10kB"
                 }
               ],
               "outputHashing": "all"
@@ -85,15 +90,20 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.scss"
             ],
-            "scripts": []
+            "scripts": [],
+            "inlineStyleLanguage": "scss"
           }
         }
       }
     }
   },
   "cli": {
+<<<<<<< HEAD
     "analytics": "b2f4d102-27fd-4bd8-a417-3c99691bf432"
+=======
+    "analytics": false
+>>>>>>> 004cf19c74cc90125d5e3c168cc6733cc8723646
   }
 }
