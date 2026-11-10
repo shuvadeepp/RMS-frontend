@@ -1,0 +1,16 @@
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="h4 mb-0">All Employees</h2>
+  <button class="btn btn-outline-primary btn-sm" (click)="loadEmployees()" [disabled]="loading">
+    Refresh
+  </button>
+</div>
+
+@if (errorMessage) {
+  <div class="alert alert-danger">{{ errorMessage }}</div>
+}
+
+@if (loading) {
+  <p class="text-muted">Loading employees...</p>
+} @else if (!errorMessage) {
+  <app-employee-table [employees]="employees" />
+}

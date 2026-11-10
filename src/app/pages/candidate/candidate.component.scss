@@ -1,0 +1,28 @@
+.header-card { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.header-main { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 8px; }
+.score { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+.plain { display: flex; flex-direction: column; gap: 10px; }
+.plain p { color: var(--nav-text); font-size: 16px; }
+
+.skill-rows { margin: 16px 0 10px; gap: 18px; }
+.skill-row { display: flex; flex-direction: column; gap: 8px; }
+.skill-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.status { font-weight: 800; font-size: 13px; }
+.status.ok { color: var(--excellent-text); }
+.status.gap { color: var(--partial-text); }
+
+.bar { position: relative; height: 12px; border-radius: 999px; background: var(--low-bg); }
+.bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--partial-ring); }
+.bar-fill.ok { background: var(--excellent-ring); }
+.bar-tick {
+  position: absolute; top: -4px; bottom: -4px; width: 3px; margin-left: -1.5px;
+  background: var(--ink); border-radius: 2px;
+}
+.transfer { margin-top: 16px; }
+.shortlisted { height: 52px; padding: 0 18px; font-size: 14px; }
+.status.meets { color: var(--excellent-text); }
+.status.below, .status.missing { color: var(--partial-text); }
+.empty-learn { justify-content: space-between; flex-wrap: wrap; }
+.actions { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+.actions app-decision-controls { flex: 1; min-width: 260px; }
