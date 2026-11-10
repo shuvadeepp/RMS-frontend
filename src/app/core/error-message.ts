@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 export interface ApiError {
   status: number;
@@ -25,7 +26,7 @@ export function toApiError(error: unknown): ApiError {
     return {
       status: 0,
       title: 'Cannot reach the server.',
-      detail: 'Check that the backend is running on port 8090 and that CORS is enabled.',
+      detail: `Check that the backend is running at ${environment.apiBaseUrl} and that CORS is enabled.`,
       rootCause: null,
       retryable: true
     };

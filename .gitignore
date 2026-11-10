@@ -19,6 +19,9 @@ yarn-error.log
 *.launch
 .settings/
 *.sublime-workspace
+.src/environments/environment.ts
+._legacy-ui/api.config.ts
+.src/app/core/error-message.ts
 
 # Visual Studio Code
 .vscode/*
