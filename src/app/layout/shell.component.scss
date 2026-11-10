@@ -43,6 +43,34 @@
   &.active { background: var(--navy-active); color: #fff; font-weight: 800; box-shadow: inset 3px 0 0 var(--primary); }
 }
 
+// Subtle AI shine: a light sweep across the label and a soft pulse on the star icon.
+.nav-link.ai-shine {
+  span {
+    background: linear-gradient(110deg, var(--shine-base) 40%, #fff 50%, var(--shine-base) 60%);
+    background-size: 250% 100%;
+    background-position: 100% 0;
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    animation: ai-text-shine 3.5s ease-in-out infinite;
+  }
+  app-icon { display: inline-flex; animation: ai-star-glow 3.5s ease-in-out infinite; }
+}
+.nav-link.ai-shine { --shine-base: var(--nav-text); }
+.nav-link.ai-shine.active { --shine-base: #fff; }
+
+@keyframes ai-text-shine {
+  0%, 20% { background-position: 100% 0; }
+  70%, 100% { background-position: 0 0; }
+}
+@keyframes ai-star-glow {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 transparent); }
+  45% { transform: scale(1.15); filter: drop-shadow(0 0 5px rgba(255, 255, 255, .85)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-link.ai-shine span, .nav-link.ai-shine app-icon { animation: none; }
+}
+
 .user-chip {
   margin-top: auto; display: flex; align-items: center; gap: 10px;
   padding: 12px; border-radius: 14px; background: var(--navy-active);

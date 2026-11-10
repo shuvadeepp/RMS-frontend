@@ -22,7 +22,7 @@
         <ul class="nav">
           @for (item of nav; track item.path) {
             <li>
-              <a class="nav-link" [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page">
+              <a class="nav-link" [class.ai-shine]="item.path === '/find-people'" [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page">
                 <app-icon [name]="item.icon" />
                 <span>{{ item.label }}</span>
               </a>
