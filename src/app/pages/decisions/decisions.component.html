@@ -1,0 +1,143 @@
+<div class="page">
+  <header class="head">
+    <div>
+      <p class="eyebrow">Decisions</p>
+      <h1 class="page-title">Review and decide</h1>
+      @if (requirementId()) { <p class="page-sub">Project: <strong>{{ projectName() }}</strong></p> }
+    </div>
+    <div class="field selector">
+      <label for="req-select">Project</label>
+      <select #reqSelect id="req-select" class="select" (change)="selectProject(reqSelect.value)">
+        <option value="">Choose a project</option>
+        @for (p of projects() ?? []; track p.projectId) {
+          <option [value]="p.projectId" [selected]="p.projectId === selectedProject()?.projectId"><strong>{{ p.projectCode }}</strong> - {{ p.projectName }}</option>
+        }
+      </select>
+    </div>
+  </header>
+
+  <p class="note"><app-icon name="check" [size]="18" /> Only you can approve. Every decision is saved with your name and date.</p>
+
+  @if (!requirementId()) {
+    @if (projects() === null || requirementList() === null) {
+      <div class="card state" role="status"><span class="spinner"></span> Loading projects...</div>
+    } @else if (projects()!.length === 0) {
+      <div class="card state">No projects found.</div>
+    } @else if (selectedProject()) {
+      <div class="card state empty-run">
+        <span>No AI matching has been run for this project yet.</span>
+        <a class="btn btn-primary btn-sm" routerLink="/find-people"><app-icon name="sparkle" [size]="16" /> Find people</a>
+      </div>
+    } @else {
+      <div class="card state">Choose a project above to see its shortlisted people.</div>
+    }
+  } @else if (loading()) {
+    <div class="card state" role="status"><span class="spinner"></span> Loading shortlist and decisions...</div>
+  } @else if (error()) {
+    <app-error-box [error]="error()!" (retry)="load(requirementId()!)" />
+  } @else {
+    <ol class="pipeline" aria-label="Status summary">
+      @for (p of pipeline(); track p.label) {
+        <li class="pill pill-info"><span class="count">{{ p.count }}</span> {{ p.label }}</li>
+      }
+    </ol>
+
+    <div class="layout">
+      <section class="people" aria-label="Shortlisted people">
+        @if (people().length === 0) {
+          <div class="card state">
+            Nobody is shortlisted for this project yet.
+            <a routerLink="/find-people" [queryParams]="{ requirementId: requirementId() }">Open Find People</a>
+          </div>
+        }
+
+        @for (m of people(); track m.matching_result_id) {
+          @let st = statusInfo(m);
+          @let av = availabilityOf(m.availability);
+          @let id = m.matching_result_id;
+          <article class="card person" [attr.aria-labelledby]="'p-' + id">
+            <div class="person-top">
+              <span class="avatar" aria-hidden="true">{{ initials(m.resource_name) }}</span>
+              <div class="list-main">
+                <h2 class="list-title" [id]="'p-' + id">
+                  <a [routerLink]="['/candidate', id]" [queryParams]="{ requirementId: requirementId() }">{{ m.resource_name }}</a>
+                </h2>
+                <p class="muted small">{{ m.designation || m.employee_code }}</p>
+                <p class="small">Match {{ m.overall_score }}% · {{ m.availability ? av.label : 'availability unknown' }}</p>
+              </div>
+              <span class="pill" [class]="st.css">{{ st.label }}</span>
+            </div>
+
+            @if (m.current_decision; as d) {
+              <p class="reason small">
+                "{{ d.decision_reason }}"
+                <span class="muted"> · {{ d.decision_maker || 'Someone' }}@if (d.decision_date) {, {{ formatDateTime(d.decision_date) }}}</span>
+              </p>
+            }
+
+            <app-decision-controls [match]="m" [requirementId]="requirementId()!" (changed)="onChanged($event)" />
+
+            @if (matchStatus(m) === 'APPROVED') {
+              @if (allocFor() !== id) {
+                <button type="button" class="btn btn-primary confirm" [disabled]="!m.current_decision?.allocation_decision_id" (click)="openAllocation(m)">
+                  Confirm allocation
+                </button>
+              } @else {
+                <form class="inline-form" (ngSubmit)="confirmAllocation(m)">
+                  <div class="grid grid-3">
+                    <div class="field">
+                      <label [for]="'pct-' + id">Allocation %</label>
+                      <select [id]="'pct-' + id" name="pct" class="select" required
+                              [ngModel]="allocPercent()" (ngModelChange)="allocPercent.set(+$event)">
+                        @for (p of allocPercentOptions; track p) { <option [ngValue]="p">{{ p }}%</option> }
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label [for]="'start-' + id">Start date</label>
+                      <app-date-picker [inputId]="'start-' + id" name="start" [required]="true"
+                             [ngModel]="allocStart()" (ngModelChange)="allocStart.set($event)" />
+                    </div>
+                    <div class="field">
+                      <label [for]="'end-' + id">End date (optional)</label>
+                      <app-date-picker [inputId]="'end-' + id" name="end" placeholder="Open-ended" [min]="allocStart() || null"
+                             [ngModel]="allocEnd()" (ngModelChange)="allocEnd.set($event)" />
+                    </div>
+                  </div>
+                  <div class="row">
+                    <button type="submit" class="btn btn-primary"
+                            [disabled]="allocating() || !allocStart() || (allocEnd() && allocEnd() < allocStart()) || allocPercent() < 1 || allocPercent() > 100">
+                      @if (allocating()) { <span class="spinner"></span> } Confirm allocation
+                    </button>
+                    <button type="button" class="btn btn-ghost" (click)="allocFor.set(null)">Cancel</button>
+                  </div>
+                </form>
+              }
+            }
+            @if (matchStatus(m) === 'ALLOCATED') {
+              <p class="muted small">Allocation proposed. HR will confirm the final assignment.</p>
+            }
+          </article>
+        }
+      </section>
+
+      <aside class="card log" aria-labelledby="log-title">
+        <h2 id="log-title" class="section-title">Decision history</h2>
+        @if (historyError()) { <p class="state state-error">Could not load history: {{ historyError() }}</p> }
+        @else if (activity().length === 0) { <p class="state">No decisions yet.</p> }
+        @else {
+          <ul class="list">
+            @for (a of activity(); track a.id) {
+              <li class="list-item">
+                <div class="list-main">
+                  <p class="small"><strong>{{ a.maker }}</strong> marked <strong>{{ a.name }}</strong> as {{ a.label }}</p>
+                  @if (a.reason) { <p class="muted small">"{{ a.reason }}"</p> }
+                  @if (a.date) { <p class="muted small">{{ formatDateTime(a.date) }}</p> }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </aside>
+    </div>
+  }
+</div>

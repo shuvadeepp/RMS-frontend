@@ -1,0 +1,67 @@
+<div class="login">
+  <section class="panel" aria-labelledby="login-headline">
+    <div class="brand">
+      <span class="brand-mark"><app-icon name="sparkle" [size]="24" /></span>
+      <span>
+        <span class="brand-name">TalentMatch AI</span>
+        <span class="brand-sub">Resource Management</span>
+      </span>
+    </div>
+
+    <div class="pitch">
+      <h1 id="login-headline">The right person for every project.</h1>
+      <p>
+        Describe what a project needs. The AI reads employee skills and experience,
+        suggests the best people and explains why. You make the final call.
+      </p>
+      <ul class="reasons">
+        @for (reason of reasons; track reason) {
+          <li><app-icon name="check" [size]="20" /> {{ reason }}</li>
+        }
+      </ul>
+    </div>
+
+    <p class="foot">Internal tool of CSM Technologies · Proof of Concept</p>
+  </section>
+
+  <section class="form-side">
+    <form class="card form-card" (ngSubmit)="submit()" novalidate>
+      <h2 class="form-title">Sign in</h2>
+      <p class="muted">Use your company account.</p>
+
+      @if (expired && !error()) {
+        <div class="notice" role="status">
+          <app-icon name="clock" [size]="18" /> Session expired, please sign in again.
+        </div>
+      }
+
+      <div class="field">
+        <label for="username">Username</label>
+        <input id="username" name="username" class="input" autocomplete="username" required
+               [ngModel]="username()" (ngModelChange)="username.set($event)" />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="password-wrap">
+          <input id="password" name="password" [type]="showPassword() ? 'text' : 'password'" class="input" autocomplete="current-password" required
+                 [ngModel]="password()" (ngModelChange)="password.set($event)" />
+          <button type="button" class="eye-btn" (click)="showPassword.set(!showPassword())"
+                  [attr.aria-pressed]="showPassword()" aria-controls="password"
+                  [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+            <app-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="20" />
+          </button>
+        </div>
+      </div>
+
+      @if (error()) {
+        <p class="error" role="alert"><app-icon name="alert" [size]="18" /> {{ error() }}</p>
+      }
+
+      <button type="submit" class="btn btn-primary btn-lg" [disabled]="loading()">
+        @if (loading()) { <span class="spinner" aria-hidden="true"></span> Signing in... } @else { Sign in }
+      </button>
+    </form>
+    <p class="foot foot-mobile">Internal tool of CSM Technologies · Proof of Concept</p>
+  </section>
+</div>

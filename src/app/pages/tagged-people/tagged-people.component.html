@@ -1,0 +1,189 @@
+<div class="page">
+  <header class="head">
+    <div class="spacer">
+      <p class="eyebrow">AI search</p>
+      <h1 class="page-title">Tagged People</h1>
+      <p class="page-sub">Employees currently blocked from AI search</p>
+    </div>
+    <div class="head-side">
+      @if (people() !== null && !error()) {
+        <span class="count">
+          {{ people()!.length }} {{ people()!.length === 1 ? 'employee' : 'employees' }},
+          {{ totalTags() }} {{ totalTags() === 1 ? 'tag' : 'tags' }}
+        </span>
+      }
+      <button type="button" class="btn" (click)="load()" [disabled]="loading()">
+        @if (loading()) { <span class="spinner"></span> } @else { <app-icon name="refresh" [size]="18" /> }
+        Refresh
+      </button>
+    </div>
+  </header>
+
+  @if (error()) {
+    <app-error-box [error]="error()!" (retry)="load()" />
+  } @else if (people() === null) {
+    <div class="card state" role="status"><span class="spinner"></span> Loading tagged people...</div>
+  } @else if (people()!.length === 0) {
+    <div class="card state">No tagged people. Everyone is available for AI search.</div>
+  } @else {
+    <div class="card filters" role="search">
+      <div class="field grow">
+        <label for="tp-search">Search</label>
+        <input id="tp-search" type="search" class="input" placeholder="Name or employee code"
+               [ngModel]="search()" (ngModelChange)="search.set($event)" />
+      </div>
+      <div class="field">
+        <label for="tp-tag">Tag type</label>
+        <select id="tp-tag" class="select" [ngModel]="tagFilter()" (ngModelChange)="tagFilter.set($event)">
+          @for (o of tagOptions; track o.value) { <option [value]="o.value">{{ o.label }}</option> }
+        </select>
+      </div>
+    </div>
+
+    @if (filtering()) {
+      <p class="muted small" role="status">
+        Showing {{ rows().length }} of {{ totalTags() }} tags ({{ visiblePeople() }} {{ visiblePeople() === 1 ? 'employee' : 'employees' }}).
+        <button type="button" class="link-btn" (click)="clearFilters()">Clear filters</button>
+      </p>
+    }
+
+    @if (rows().length === 0) {
+      <div class="card state">Nobody matches these filters.</div>
+    } @else {
+      <!-- Wide screens: table grouped by employee -->
+      <div class="card table-card">
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">Tagged employees, one row per tag</caption>
+            <thead>
+              <tr>
+                <th scope="col">Employee</th>
+                <th scope="col">Designation</th>
+                <th scope="col">Tag</th>
+                <th scope="col">Project / Requirement</th>
+                <th scope="col" class="num">Allocation %</th>
+                <th scope="col">Status</th>
+                <th scope="col">Start date</th>
+                <th scope="col">End date</th>
+                @if (isAdmin()) { <th scope="col"><span class="sr-only">Action</span></th> }
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of rows(); track r.key) {
+                <tr [class.group-start]="r.span > 0">
+                  @if (r.span > 0) {
+                    <th scope="rowgroup" class="emp" [attr.rowspan]="r.span">
+                      <span class="emp-name">{{ r.person.resource_name || '-' }}</span>
+                      <span class="emp-code">{{ r.person.employee_code || '-' }}</span>
+                    </th>
+                    <td [attr.rowspan]="r.span">{{ r.person.designation || '-' }}</td>
+                  }
+                  <td><app-tag-badge [tag]="r.tag.tag" [reason]="r.tag.reason" /></td>
+                  <td class="project">
+                    <span class="project-name">{{ r.tag.project_name || '-' }}</span>
+                    @if (requirementLine(r.tag)) { <span class="muted small">{{ requirementLine(r.tag) }}</span> }
+                  </td>
+                  <td class="num">{{ percentOf(r.tag) }}</td>
+                  <td>
+                    @if (r.tag.allocation_status) {
+                      <span class="pill" [class]="statusPill(r.tag.allocation_status)">{{ humanise(r.tag.allocation_status) }}</span>
+                    } @else { - }
+                  </td>
+                  <td>{{ formatDayMonYear(r.tag.start_date) }}</td>
+                  <td>{{ r.tag.end_date ? formatDayMonYear(r.tag.end_date) : 'Open-ended' }}</td>
+                  @if (isAdmin()) {
+                    <td>
+                      @if (canRelease(r.tag)) {
+                        <button type="button" class="btn btn-sm btn-danger" (click)="openRelease(r)">
+                          <app-icon name="unlock" [size]="16" /> Release
+                          <span class="sr-only">{{ r.person.resource_name }} from {{ tagInfo(r.tag.tag).label }}</span>
+                        </button>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Small screens: one card per tag -->
+      <ul class="tag-cards" aria-label="Tagged employees">
+        @for (r of rows(); track r.key) {
+          <li class="card tag-card">
+            <div class="row">
+              <div class="list-main">
+                <p class="list-title">{{ r.person.resource_name || '-' }}</p>
+                <p class="muted small">{{ r.person.employee_code || '-' }} · {{ r.person.designation || '-' }}</p>
+              </div>
+              <app-tag-badge [tag]="r.tag.tag" [reason]="r.tag.reason" />
+            </div>
+            <div>
+              <p class="project-name">{{ r.tag.project_name || '-' }}</p>
+              @if (requirementLine(r.tag)) { <p class="muted small">{{ requirementLine(r.tag) }}</p> }
+              @if (r.tag.reason) { <p class="muted small">{{ r.tag.reason }}</p> }
+            </div>
+            <dl class="facts">
+              <div><dt>Allocation</dt><dd>{{ percentOf(r.tag) }}</dd></div>
+              <div><dt>Status</dt><dd>{{ r.tag.allocation_status ? humanise(r.tag.allocation_status) : '-' }}</dd></div>
+              <div><dt>Start</dt><dd>{{ formatDayMonYear(r.tag.start_date) }}</dd></div>
+              <div><dt>End</dt><dd>{{ r.tag.end_date ? formatDayMonYear(r.tag.end_date) : 'Open-ended' }}</dd></div>
+            </dl>
+            @if (isAdmin() && canRelease(r.tag)) {
+              <button type="button" class="btn btn-sm btn-danger" (click)="openRelease(r)">
+                <app-icon name="unlock" [size]="16" /> Release
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    }
+  }
+</div>
+
+<dialog #releaseDialog class="release-dialog" aria-labelledby="release-title"
+        (cancel)="onDialogCancel($event)" (close)="onDialogClosed()">
+  @if (target(); as t) {
+    <form class="dialog-body" (ngSubmit)="confirmRelease()" novalidate>
+      <h2 id="release-title" class="section-title">Release from AI search block</h2>
+      <p>
+        Release <strong>{{ t.person.resource_name || 'this employee' }}</strong> from
+        <strong>{{ tagInfo(t.tag.tag).label }}</strong> on <strong>{{ projectOf(t.tag) }}</strong>?
+        They will appear again in AI search.
+      </p>
+      <p class="notice small">
+        <app-icon name="alert" [size]="18" />
+        <span>Allocation not started yet will be CANCELLED; a running allocation will be COMPLETED with end date today.</span>
+      </p>
+
+      <div class="field">
+        <label for="release-reason">Reason <span class="req" aria-hidden="true">*</span></label>
+        <textarea id="release-reason" name="reason" class="textarea" required [attr.minlength]="minReason"
+                  [class.invalid]="reasonTouched() && !reasonValid()"
+                  [attr.aria-invalid]="reasonTouched() && !reasonValid()"
+                  aria-describedby="release-reason-msg"
+                  [disabled]="releasing()"
+                  [ngModel]="reason()" (ngModelChange)="reason.set($event)" (blur)="reasonTouched.set(true)"></textarea>
+        <p id="release-reason-msg" [class]="reasonTouched() && !reasonValid() ? 'field-error' : 'hint'">
+          @if (reasonTouched() && !reasonValid()) {
+            Please enter a reason of at least {{ minReason }} characters.
+          } @else {
+            At least {{ minReason }} characters. Saved with the release.
+          }
+        </p>
+      </div>
+
+      @if (releaseError()) {
+        <p class="state state-error" role="alert">{{ releaseError() }}</p>
+      }
+
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" (click)="closeRelease()" [disabled]="releasing()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="releasing()">
+          @if (releasing()) { <span class="spinner"></span> } Release
+        </button>
+      </div>
+    </form>
+  }
+</dialog>

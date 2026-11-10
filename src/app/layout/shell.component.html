@@ -1,0 +1,63 @@
+<a class="skip-link" href="#main">Skip to content</a>
+
+<div class="shell">
+  <aside class="sidebar" [class.open]="menuOpen()">
+    <div class="sidebar-top">
+      <a class="brand" routerLink="/home">
+        <span class="brand-mark"><app-icon name="sparkle" [size]="22" /></span>
+        <span class="brand-text">
+          <span class="brand-name">TalentMatch AI</span>
+          <span class="brand-sub">Resource Management</span>
+        </span>
+      </a>
+      <button type="button" class="menu-toggle" (click)="menuOpen.set(!menuOpen())"
+              [attr.aria-expanded]="menuOpen()" aria-controls="main-nav">
+        <app-icon [name]="menuOpen() ? 'close' : 'menu'" [size]="22" />
+        <span class="sr-only">{{ menuOpen() ? 'Close menu' : 'Open menu' }}</span>
+      </button>
+    </div>
+
+    <div class="sidebar-body" id="main-nav">
+      <nav aria-label="Main">
+        <ul class="nav">
+          @for (item of nav; track item.path) {
+            <li>
+              <a class="nav-link" [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page">
+                <app-icon [name]="item.icon" />
+                <span>{{ item.label }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      </nav>
+
+      <div class="user-chip">
+        <span class="user-avatar" aria-hidden="true">{{ userInitials() }}</span>
+        <span class="user-text">
+          <span class="user-name">{{ user()?.fullName || user()?.username }}</span>
+          <span class="user-role">{{ roleLabel() }}</span>
+        </span>
+        <button type="button" class="signout" (click)="signOut()">
+          <app-icon name="logout" [size]="18" />
+          <span class="sr-only">Sign out</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <button type="button" class="theme-toggle" (click)="theme.toggle()"
+              [attr.aria-pressed]="theme.isDark()">
+        <app-icon [name]="theme.isDark() ? 'sun' : 'moon'" [size]="18" />
+        <span>{{ theme.isDark() ? 'Light mode' : 'Dark mode' }}</span>
+      </button>
+    </header>
+
+    <main id="main" class="main" tabindex="-1">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+
+<app-toasts />

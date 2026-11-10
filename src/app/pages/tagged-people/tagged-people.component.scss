@@ -1,0 +1,53 @@
+.head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.head-side { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.count { font-weight: 800; color: var(--muted); }
+
+.filters { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; padding: 18px 22px; }
+.filters .grow { flex: 1; min-width: 220px; }
+.filters .field:not(.grow) { width: 260px; max-width: 100%; }
+
+.table-card { padding: 8px 0; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th[scope='col'] {
+  text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+  padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+td, .emp { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; text-align: left; }
+td { white-space: nowrap; }
+tr.group-start > * { border-top: 2px solid var(--border); }
+tbody tr:first-child > * { border-top: 0; }
+.num { text-align: right; }
+.emp { font-weight: 400; min-width: 160px; }
+.emp-name { display: block; font-weight: 800; }
+.emp-code { display: block; font-size: 12px; font-weight: 800; letter-spacing: .06em; color: var(--primary-dark); }
+.project { white-space: normal; min-width: 180px; }
+.project > span { display: block; }
+.project-name { font-weight: 700; }
+
+.tag-cards { display: none; list-style: none; margin: 0; padding: 0; flex-direction: column; gap: 12px; }
+.tag-card { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+.tag-card .row { align-items: flex-start; }
+.tag-card .list-main { min-width: 0; }
+.tag-card .btn { align-self: flex-start; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; margin: 0; }
+.facts dt { font-size: 12px; font-weight: 800; color: var(--muted); }
+.facts dd { margin: 0; font-weight: 600; }
+
+@media (max-width: 900px) {
+  .table-card { display: none; }
+  .tag-cards { display: flex; }
+}
+
+.release-dialog {
+  width: min(520px, calc(100vw - 32px)); padding: 0;
+  border: 1px solid var(--border); border-radius: var(--radius-card);
+  background: var(--card); color: var(--ink); box-shadow: 0 20px 50px rgba(15, 27, 61, .25);
+}
+.release-dialog::backdrop { background: rgba(15, 27, 61, .45); }
+.dialog-body { display: flex; flex-direction: column; gap: 16px; padding: 22px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.notice { display: flex; gap: 8px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: var(--partial-bg); color: var(--partial-text); font-weight: 600; }
+.field-error { margin: 0; color: var(--danger-text); font-size: 13px; font-weight: 700; }
+.hint { margin: 0; }
+.invalid { border-color: var(--danger-text); }
