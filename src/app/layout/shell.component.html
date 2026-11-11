@@ -47,6 +47,8 @@
 
   <div class="content">
     <header class="topbar">
+      <span class="topbar-spacer" aria-hidden="true"></span>
+      <app-global-search />
       <button type="button" class="theme-toggle" (click)="theme.toggle()"
               [attr.aria-pressed]="theme.isDark()">
         <app-icon [name]="theme.isDark() ? 'sun' : 'moon'" [size]="18" />

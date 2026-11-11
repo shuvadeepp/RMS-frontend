@@ -1,9 +1,11 @@
 import { HttpResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, catchError, of } from 'rxjs';
 import { saveBlob } from '../../core/download';
 import { ApiError, toApiError } from '../../core/error-message';
+import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../core/toast.service';
 import { Project } from '../../models/employee.model';
 import { AuditLog, DashboardSummary, GapPriority, MatchCategory, Requirement } from '../../models/requirement.model';
@@ -13,9 +15,10 @@ import { LearningService } from '../../services/learning.service';
 import { LookupService } from '../../services/lookup.service';
 import { RequirementService } from '../../services/requirement.service';
 import { BarChartComponent, BarRow } from '../../shared/bar-chart.component';
+import { DatePickerComponent } from '../../shared/date-picker.component';
 import { ErrorBoxComponent } from '../../shared/error-box.component';
 import { IconComponent } from '../../shared/icon.component';
-import { CATEGORIES, PRIORITY_ORDER, formatDateTime, humanise, priorityInfo, toCounts } from '../../shared/labels';
+import { CATEGORIES, PRIORITY_ORDER, formatDateTime, humanise, parseTimestamp, priorityInfo, toCounts, toIsoDate } from '../../shared/labels';
 
 // Bar colours for gap priority (label text is always shown too).
 const PRIORITY_BAR: Record<GapPriority, string> = {
@@ -33,6 +36,9 @@ const CATEGORY_BAR: Record<MatchCategory, string> = {
   LOW: '#5E6CB0'
 };
 
+const LOG_PAGE_SIZE = 20;
+const LOG_ROLES = ['USER', 'ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER', 'LK_ADMIN'];
+
 const DECISION_TEXT: Record<string, string> = {
   SELECTED: 'Approved',
   ON_HOLD: 'On hold',
@@ -43,7 +49,7 @@ const DECISION_TEXT: Record<string, string> = {
 
 @Component({
   selector: 'app-reports',
-  imports: [IconComponent, ErrorBoxComponent, BarChartComponent],
+  imports: [FormsModule, IconComponent, ErrorBoxComponent, BarChartComponent, DatePickerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -141,24 +147,37 @@ const DECISION_TEXT: Record<string, string> = {
         }
       </section>
 
+      @if (canSeeLogs()) {
       <section class="card" aria-labelledby="log-title">
         <h2 id="log-title" class="section-title chart-title">Activity log</h2>
+        <div class="log-filter">
+          <div class="field dp"><label for="log-from">From</label>
+            <app-date-picker inputId="log-from" placeholder="Start date" [max]="logTo() || null"
+                             [ngModel]="logFrom()" (ngModelChange)="logFrom.set($event || ''); logPage.set(1)" /></div>
+          <div class="field dp"><label for="log-to">To</label>
+            <app-date-picker inputId="log-to" placeholder="End date" [min]="logFrom() || null"
+                             [ngModel]="logTo()" (ngModelChange)="logTo.set($event || ''); logPage.set(1)" /></div>
+          @if (logFrom() || logTo()) {
+            <button type="button" class="btn" (click)="logFrom.set(''); logTo.set(''); logPage.set(1)">Clear dates</button>
+          }
+        </div>
         @if (logsError()) {
           <app-error-box [error]="logsError()!" (retry)="loadLogs()" />
         } @else if (logs() === null) {
           <div class="state" role="status"><span class="spinner"></span> Loading activity...</div>
-        } @else if (logs()!.length === 0) {
-          <p class="state">No activity yet.</p>
+        } @else if (filteredLogs().length === 0) {
+          <p class="state">{{ logs()!.length === 0 ? 'No activity yet.' : 'No activity in this date range.' }}</p>
         } @else {
           <div class="table-wrap">
             <table>
-              <caption class="sr-only">Latest 50 actions, newest first</caption>
-              <thead><tr><th scope="col">Time</th><th scope="col">User</th><th scope="col">Action</th><th scope="col">Record</th></tr></thead>
+              <caption class="sr-only">Latest actions, newest first</caption>
+              <thead><tr><th scope="col">#</th><th scope="col">Time</th><th scope="col">User</th><th scope="col">Action</th><th scope="col">Record</th></tr></thead>
               <tbody>
-                @for (l of logs(); track $index) {
+                @for (l of pagedLogs(); track $index) {
                   <tr>
+                    <td>{{ (logPage() - 1) * logPageSize + $index + 1 }}</td>
                     <td>{{ formatDateTime(l.action_timestamp) }}</td>
-                    <td>{{ l.performed_by || l.action_by || l.username || '-' }}</td>
+                    <td>{{ userOf(l) }}</td>
                     <td>{{ humanise(l.action || l.action_type) }}</td>
                     <td>{{ humanise(l.entity_name || l.entity) }}@if (l.record_id !== null && l.record_id !== undefined) { #{{ l.record_id }} }</td>
                   </tr>
@@ -166,8 +185,16 @@ const DECISION_TEXT: Record<string, string> = {
               </tbody>
             </table>
           </div>
+          @if (logPages() > 1) {
+            <nav class="pager" aria-label="Activity log pages">
+              <button type="button" class="btn" [disabled]="logPage() <= 1" (click)="logPage.set(logPage() - 1)">Previous</button>
+              <span class="muted small">Page {{ logPage() }} of {{ logPages() }} · {{ filteredLogs().length }} entries</span>
+              <button type="button" class="btn" [disabled]="logPage() >= logPages()" (click)="logPage.set(logPage() + 1)">Next</button>
+            </nav>
+          }
         }
       </section>
+      }
     </div>
   `,
   styles: `
@@ -187,6 +214,9 @@ const DECISION_TEXT: Record<string, string> = {
     .selector option::checkmark { display: none; }
     .selector strong { font-weight: 800; }
     .hint { margin-top: 8px; }
+    .log-filter { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 12px; }
+    .dp { width: 220px; max-width: 100%; }
+    .pager { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 12px; }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
     th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--border); }
@@ -267,13 +297,54 @@ export class ReportsComponent implements OnInit {
     PRIORITY_ORDER.map(p => ({ label: priorityInfo(p).label, count: this.gaps()?.by_priority?.[p] ?? 0, color: PRIORITY_BAR[p] }))
   );
 
+  readonly logPageSize = LOG_PAGE_SIZE;
+  readonly logPage = signal(1);
+  readonly logFrom = signal('');
+  readonly logTo = signal('');
+  private auth = inject(AuthService);
+  // The activity log is shown only to these roles.
+  readonly canSeeLogs = computed(() => this.auth.hasAnyRole(...LOG_ROLES));
+  readonly filteredLogs = computed(() => {
+    const from = this.logFrom(), to = this.logTo();
+    const list = this.logs() ?? [];
+    if (!from && !to) return list;
+    return list.filter(l => {
+      const d = parseTimestamp(l.action_timestamp);
+      if (!d) return false;
+      const day = toIsoDate(d);
+      return (!from || day >= from) && (!to || day <= to);
+    });
+  });
+  readonly logPages = computed(() => Math.max(1, Math.ceil(this.filteredLogs().length / LOG_PAGE_SIZE)));
+  readonly pagedLogs = computed(() => {
+    const start = (this.logPage() - 1) * LOG_PAGE_SIZE;
+    return this.filteredLogs().slice(start, start + LOG_PAGE_SIZE);
+  });
+
+  // The API's user field name varies; check the likely ones, then any key that looks like a user/actor.
+  userOf(l: AuditLog): string {
+    const rec = l as Record<string, unknown>;
+    const known = ['performed_by', 'action_by', 'username', 'user_name', 'userName', 'user', 'changed_by', 'created_by', 'actor', 'employee_name', 'performedBy'];
+    for (const k of known) {
+      const v = rec[k];
+      if (typeof v === 'string' && v.trim()) return v;
+      if (v && typeof v === 'object') {
+        const o = v as Record<string, unknown>;
+        const name = o['username'] ?? o['name'] ?? o['full_name'];
+        if (typeof name === 'string' && name.trim()) return name;
+      }
+    }
+    const idKey = Object.keys(rec).find(k => /(user|actor|by)/i.test(k) && rec[k] != null && rec[k] !== '');
+    return idKey ? String(rec[idKey]) : '-';
+  }
+
   readonly formatDateTime = formatDateTime;
   readonly humanise = humanise;
 
   ngOnInit(): void {
     this.loadSummary();
     this.loadGapSummary();
-    this.loadLogs();
+    if (this.canSeeLogs()) this.loadLogs();
   }
 
   loadSummary(): void {
@@ -295,7 +366,8 @@ export class ReportsComponent implements OnInit {
   loadLogs(): void {
     this.logs.set(null);
     this.logsError.set(null);
-    this.requirementsApi.getAuditLogs(50).subscribe({
+    this.logPage.set(1);
+    this.requirementsApi.getAuditLogs(200).subscribe({
       next: list => this.logs.set(list ?? []),
       error: err => { this.logs.set([]); this.logsError.set(toApiError(err)); }
     });

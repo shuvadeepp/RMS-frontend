@@ -92,12 +92,12 @@
 
 .topbar {
   position: sticky; top: 0; z-index: 15;
-  display: flex; align-items: center; justify-content: flex-end;
+  display: grid; grid-template-columns: 1fr minmax(0, 480px) 1fr; align-items: center; gap: 16px;
   height: 56px; padding: 0 40px;
   background: var(--bg); border-bottom: 1px solid var(--border);
 }
 .theme-toggle {
-  display: inline-flex; align-items: center; gap: 8px;
+  justify-self: end; display: inline-flex; align-items: center; gap: 8px;
   height: 38px; padding: 0 14px; border-radius: 999px;
   background: var(--card); color: var(--ink); border: 1px solid var(--input-border);
   font-weight: 700; font-size: 13px; cursor: pointer;
@@ -113,6 +113,8 @@
   .sidebar.open .sidebar-body { display: flex; }
   .user-chip { margin-top: 12px; }
   .content { margin-left: 0; }
-  .topbar { position: static; padding: 0 16px; height: 52px; }
+  .topbar { position: static; padding: 0 16px; height: 52px; grid-template-columns: minmax(0, 1fr) auto; }
+  .topbar-spacer { display: none; }
+  .theme-toggle span { display: none; }
   .main { padding: 20px 16px 40px; }
 }

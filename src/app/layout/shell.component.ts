@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { ThemeService } from '../core/theme.service';
+import { GlobalSearchComponent } from '../shared/global-search.component';
 import { IconComponent, IconName } from '../shared/icon.component';
 import { ToastsComponent } from '../shared/toasts.component';
 import { humanise, initials } from '../shared/labels';
@@ -17,7 +18,7 @@ interface NavItem {
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, ToastsComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, ToastsComponent, GlobalSearchComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss'
@@ -29,8 +30,8 @@ export class ShellComponent {
   // Every item is shown to every role: the backend does not enforce roles yet.
   readonly nav: NavItem[] = [
     { path: '/home', label: 'Home', icon: 'home' },
-    { path: '/find-people', label: 'Find People (AI)', icon: 'sparkle' },
     { path: '/projects', label: 'Projects', icon: 'folder' },
+    { path: '/find-people', label: 'Find People (AI)', icon: 'sparkle' },
     { path: '/people', label: 'People & Skills', icon: 'users' },
     { path: '/decisions', label: 'Decisions', icon: 'check' },
     { path: '/tagged-people', label: 'Tagged People', icon: 'tag' },
