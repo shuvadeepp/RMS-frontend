@@ -17,6 +17,33 @@
   &:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
   .action-icon { background: rgba(255, 255, 255, .18); color: #fff; }
   .action-text, .action-go { color: #fff; }
+
+  // AI shine, same as the "Find People (AI)" sidebar link: a light sweep across the title and a soft glow on the star.
+  .action-title {
+    --shine-base: #C9D1FF;
+    background: linear-gradient(110deg, var(--shine-base) 40%, #fff 50%, var(--shine-base) 60%);
+    background-size: 250% 100%;
+    background-position: 100% 0;
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    animation: ai-text-shine 3.5s ease-in-out infinite;
+  }
+  // Only the star itself twinkles; the tile behind it stays still.
+  .action-icon app-icon { display: inline-flex; animation: ai-star-twinkle 2.4s ease-in-out infinite; }
+}
+
+@keyframes ai-text-shine {
+  0%, 20% { background-position: 100% 0; }
+  70%, 100% { background-position: 0 0; }
+}
+@keyframes ai-star-twinkle {
+  0%, 100% { transform: scale(1) rotate(0); filter: drop-shadow(0 0 0 transparent); }
+  40% { transform: scale(1.22) rotate(18deg); filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 9px rgba(255, 255, 255, .9)); }
+  60% { transform: scale(1.12) rotate(-8deg); filter: drop-shadow(0 0 3px rgba(255, 255, 255, .8)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-primary .action-title, .action-primary .action-icon app-icon { animation: none; }
 }
 
 .runs-title { margin-bottom: 14px; }
