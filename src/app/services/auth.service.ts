@@ -21,6 +21,14 @@ export class AuthService {
   // Role from the login response; "ROLE_ADMIN" is accepted too.
   readonly isAdmin = computed(() => (this.user()?.role ?? '').toUpperCase().replace(/^ROLE_/, '') === 'ADMIN');
 
+  // Role without the ROLE_ prefix, upper-case; '' when logged out.
+  readonly role = computed(() => (this.user()?.role ?? '').toUpperCase().replace(/^ROLE_/, ''));
+
+  // True when the user's role is one of the given roles. Reads a signal, so it works inside computed().
+  hasAnyRole(...roles: string[]): boolean {
+    return roles.includes(this.role());
+  }
+
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.api.post<LoginResponse>('/auth/login', credentials).pipe(
       tap(response => {

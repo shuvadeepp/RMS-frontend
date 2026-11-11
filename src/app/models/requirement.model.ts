@@ -7,6 +7,7 @@ export type WorkMode = 'AS_REQUIRED' | 'ONSITE' | 'HYBRID' | 'REMOTE';
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type MatchCategory = 'EXCELLENT' | 'GOOD' | 'PARTIAL' | 'LOW';
 export type RecommendationStatus = 'REVIEW_REQUIRED' | 'RECOMMENDED' | 'NOT_RECOMMENDED';
+export type RunTrigger = 'NEW_SEARCH' | 'REMATCH_AFTER_LEARNING' | 'MANUAL_REMATCH';
 export type RunStatus = 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'COMPLETED_WITH_ERRORS' | 'FAILED';
 
 export interface RequiredSkill {
@@ -100,6 +101,9 @@ export interface MatchingRun {
   error_message?: string | null;
   result_count?: number | null;
   project_name?: string | null;
+  run_trigger?: RunTrigger | null;
+  previous_run_id?: number | null;
+  rematch_note?: string | null;
   // Not sent by the backend yet; the scan console uses it only when present.
   progress?: MatchingRunProgress | null;
 }
@@ -190,17 +194,31 @@ export interface MatchResult {
   current_decision?: CurrentDecision | null;
   tags?: PersonTag[] | null;
   window_free_percentage?: number | null;
+  run_trigger?: RunTrigger | null;
+  previous_run_id?: number | null;
+  gap_details?: SkillGap[];
 }
 
 // ---------- Skill gaps and learning ----------
-export type ResourceType = 'COURSE' | 'CERTIFICATION' | 'DOCUMENTATION' | 'MENTORING' | 'PRACTICAL_ASSIGNMENT' | 'OTHER';
+export type ResourceType = 'COURSE' | 'CERTIFICATION' | 'DOCUMENTATION' | 'MENTORING' | 'PRACTICAL_ASSIGNMENT' | 'OTHER' | 'ASSESSMENT';
 export type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'IN_PROGRESS' | 'COMPLETED';
+export type GapPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+export type GapType = 'MISSING' | 'BELOW_REQUIRED';
+export type RecommendationSource = 'LK_REPOSITORY' | 'AI_GENERATED' | 'RULE_BASED' | 'MANUAL';
+export type ValidationMethod = 'KNOWLEDGE_ASSESSMENT' | 'PRACTICAL_ASSIGNMENT' | 'DEMONSTRATION' | 'TECHNICAL_REVIEW' | 'CERTIFICATE' | 'NONE';
+export type EvidenceType = 'ASSESSMENT' | 'CERTIFICATION' | 'PROJECT_EXPERIENCE' | 'PRACTICAL_ASSIGNMENT' | 'OTHER';
 
 export interface SkillGap {
+  skill_gap_id?: number | null;          // null for old runs shown from live data
+  skill_id?: number | null;
   skill_name: string;
+  gap_type?: GapType | null;
   required_level: number | null;
-  current_level: number | null;
+  current_level: number | null;          // null = skill missing
+  gap_size?: number | null;
   mandatory: boolean;
+  priority?: GapPriority | null;
+  priority_reason?: string | null;
   gap_description?: string | null;
 }
 
@@ -214,12 +232,26 @@ export interface LearningRecommendation {
   resource_type?: ResourceType | string | null;
   review_status: ReviewStatus | string;
   review_comments?: string | null;
+  skill_gap_id?: number | null;
+  learning_resource_id?: number | null;
+  recommendation_source?: RecommendationSource | null;
+  priority?: GapPriority | null;
+  sequence_order?: number | null;
+  estimated_hours?: number | null;       // only for L&K catalog items
+  estimated_weeks?: number | null;
+  validation_method?: ValidationMethod | null;
+  started_at?: string | null;
+  completed_at?: string | null;
 }
 
 export interface SkillGapReport {
   matching_result_id: number;
+  matching_run_id?: number;
+  employee_id?: number;
   employee_code: string;
   resource_name: string;
+  match_category?: string;
+  gaps_source?: 'STORED' | 'LIVE_LEGACY';
   gaps: SkillGap[];
   learning_recommendations: LearningRecommendation[];
   note?: string | null;

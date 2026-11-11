@@ -63,8 +63,9 @@ export class RequirementService {
       .pipe(map(list => (list ?? []).map(normalizeMatch)));
   }
 
-  getSkillGaps(requirementId: number): Observable<SkillGapReport[]> {
-    return this.api.get<SkillGapReport[]>(`/api/requirements/${requirementId}/skill-gaps`);
+  // Latest finished run unless runId is given (use it to view the run before a rematch).
+  getSkillGaps(requirementId: number, runId?: number | null): Observable<SkillGapReport[]> {
+    return this.api.get<SkillGapReport[]>(`/api/requirements/${requirementId}/skill-gaps`, { runId });
   }
 
   exportMatches(requirementId: number): Observable<HttpResponse<Blob>> {

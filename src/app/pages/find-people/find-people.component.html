@@ -177,6 +177,10 @@
         <h2 id="results-title" class="section-title">
           AI suggestions · {{ matches().length }} {{ matches().length === 1 ? 'person' : 'people' }} found
           @if (poolSize() !== null) { from {{ poolSize() }} }
+          @if (isRematch(state.run()?.run_trigger)) {
+            <span class="pill pill-info" [attr.title]="state.run()?.rematch_note">Rematch</span>
+            @if (state.run()?.previous_run_id) { <span class="muted small">replaces run {{ state.run()?.previous_run_id }}</span> }
+          }
         </h2>
         <div class="chip-list">
           @for (c of categoryCounts(); track c.info.key) {

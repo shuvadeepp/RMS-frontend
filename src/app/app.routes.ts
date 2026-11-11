@@ -16,6 +16,8 @@ export const routes: Routes = [
       { path: 'projects', loadComponent: () => import('./pages/projects/projects.component').then(m => m.ProjectsComponent) },
       { path: 'people', loadComponent: () => import('./pages/people/people.component').then(m => m.PeopleComponent) },
       { path: 'skill-growth', loadComponent: () => import('./pages/skill-growth/skill-growth.component').then(m => m.SkillGrowthComponent) },
+      { path: 'learning-catalog', loadComponent: () => import('./pages/learning-catalog/learning-catalog.component').then(m => m.LearningCatalogComponent) },
+      { path: 'compare/:runId', loadComponent: () => import('./pages/run-compare/run-compare.component').then(m => m.RunCompareComponent) },
       { path: 'tagged-people', loadComponent: () => import('./pages/tagged-people/tagged-people.component').then(m => m.TaggedPeopleComponent) },
       { path: 'reports',loadComponent: () => import('./pages/reports/reports.component').then(m => m.ReportsComponent) },
       { path: '', redirectTo: 'home', pathMatch: 'full' }

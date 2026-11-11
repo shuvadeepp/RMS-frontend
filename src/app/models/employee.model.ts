@@ -42,6 +42,12 @@ export interface Skill {
   skillName: string;
 }
 
+// From /api/skills/with-ids (the plain /api/skills list has no ids).
+export interface SkillWithId {
+  skill_id: number;
+  skill_name: string;
+}
+
 export interface Project {
   projectId: number;
   projectCode: string;

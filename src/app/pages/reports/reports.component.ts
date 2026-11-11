@@ -6,14 +6,24 @@ import { saveBlob } from '../../core/download';
 import { ApiError, toApiError } from '../../core/error-message';
 import { ToastService } from '../../core/toast.service';
 import { Project } from '../../models/employee.model';
-import { AuditLog, DashboardSummary, MatchCategory, Requirement } from '../../models/requirement.model';
+import { AuditLog, DashboardSummary, GapPriority, MatchCategory, Requirement } from '../../models/requirement.model';
+import { GapSummary } from '../../models/learning-pathway.model';
 import { DecisionService } from '../../services/decision.service';
+import { LearningService } from '../../services/learning.service';
 import { LookupService } from '../../services/lookup.service';
 import { RequirementService } from '../../services/requirement.service';
 import { BarChartComponent, BarRow } from '../../shared/bar-chart.component';
 import { ErrorBoxComponent } from '../../shared/error-box.component';
 import { IconComponent } from '../../shared/icon.component';
-import { CATEGORIES, formatDateTime, humanise, toCounts } from '../../shared/labels';
+import { CATEGORIES, PRIORITY_ORDER, formatDateTime, humanise, priorityInfo, toCounts } from '../../shared/labels';
+
+// Bar colours for gap priority (label text is always shown too).
+const PRIORITY_BAR: Record<GapPriority, string> = {
+  CRITICAL: '#C0392B',
+  HIGH: '#D9661F',
+  MEDIUM: '#C98400',
+  LOW: '#5E6CB0'
+};
 
 // Bar colours for match categories; "Low match" uses a deeper slate than its pill so it passes the chart checks.
 const CATEGORY_BAR: Record<MatchCategory, string> = {
@@ -65,6 +75,43 @@ const DECISION_TEXT: Record<string, string> = {
             <app-bar-chart [rows]="byRunStatus()" label="Matching runs by status" /></section>
         </div>
       }
+
+      <section aria-labelledby="gaps-title" class="gaps">
+        <h2 id="gaps-title" class="section-title">Skill gaps across the workforce</h2>
+        <p class="muted small">Latest finished run of every project.</p>
+        @if (gapError()) {
+          <app-error-box [error]="gapError()!" (retry)="loadGapSummary()" />
+        } @else if (!gaps()) {
+          <div class="card state" role="status"><span class="spinner"></span> Loading skill gaps...</div>
+        } @else {
+          <div class="grid grid-4">
+            @for (t of gapTiles(); track t.label) {
+              <div class="card tile">
+                <span class="tile-value">{{ t.value }}</span>
+                <span class="tile-label">{{ t.label }}</span>
+              </div>
+            }
+          </div>
+          <div class="grid grid-2">
+            <section class="card" aria-labelledby="g1"><h2 id="g1" class="section-title chart-title">Gaps by priority</h2>
+              <app-bar-chart [rows]="gapByPriority()" label="Gaps by priority" /></section>
+            <section class="card" aria-labelledby="g2"><h2 id="g2" class="section-title chart-title">Most common gaps</h2>
+              @if (gaps()!.most_common_gap_skills.length === 0) {
+                <p class="state">No gaps found.</p>
+              } @else {
+                <ul class="list">
+                  @for (s of gaps()!.most_common_gap_skills; track s.skill_id) {
+                    <li class="common">
+                      <span class="list-title">{{ s.skill_name }}</span>
+                      <span class="muted small">{{ s.gap_count }} gap(s) · {{ s.employees_affected }} {{ s.employees_affected === 1 ? 'person' : 'people' }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+            </section>
+          </div>
+        }
+      </section>
 
       <section class="card" aria-labelledby="dl-title">
         <h2 id="dl-title" class="section-title chart-title">Download Excel</h2>
@@ -125,6 +172,8 @@ const DECISION_TEXT: Record<string, string> = {
   `,
   styles: `
     .chart-title { margin-bottom: 16px; }
+    .gaps { display: flex; flex-direction: column; gap: 12px; }
+    .common { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     .downloads { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
     .selector { width: 380px; max-width: 100%; }
     /* Lets options show the bold code where the browser supports styled selects; others show plain text. */
@@ -150,6 +199,7 @@ export class ReportsComponent implements OnInit {
   private decisionsApi = inject(DecisionService);
   private toast = inject(ToastService);
   private lookups = inject(LookupService);
+  private learning = inject(LearningService);
 
   readonly summary = signal<DashboardSummary | null>(null);
   readonly summaryError = signal<ApiError | null>(null);
@@ -201,11 +251,28 @@ export class ReportsComponent implements OnInit {
     toCounts(this.summary()?.runs_by_status).map(({ key, count }) => ({ label: humanise(key), count }))
   );
 
+  // Skill-gap summary: no filters = whole workforce, latest run of each requirement.
+  readonly gaps = signal<GapSummary | null>(null);
+  readonly gapError = signal<ApiError | null>(null);
+  readonly gapTiles = computed(() => {
+    const g = this.gaps();
+    return [
+      { label: 'Skill gaps', value: g?.total_gaps ?? 0 },
+      { label: 'People with gaps', value: g?.employees_with_gaps ?? 0 },
+      { label: 'Must-have gaps', value: g?.mandatory_gaps ?? 0 },
+      { label: 'Gaps without a learning plan', value: g?.gaps_without_recommendation ?? 0 }
+    ];
+  });
+  readonly gapByPriority = computed<BarRow[]>(() =>
+    PRIORITY_ORDER.map(p => ({ label: priorityInfo(p).label, count: this.gaps()?.by_priority?.[p] ?? 0, color: PRIORITY_BAR[p] }))
+  );
+
   readonly formatDateTime = formatDateTime;
   readonly humanise = humanise;
 
   ngOnInit(): void {
     this.loadSummary();
+    this.loadGapSummary();
     this.loadLogs();
   }
 
@@ -214,6 +281,14 @@ export class ReportsComponent implements OnInit {
     this.requirementsApi.getDashboardSummary().subscribe({
       next: s => this.summary.set(s),
       error: err => this.summaryError.set(toApiError(err))
+    });
+  }
+
+  loadGapSummary(): void {
+    this.gapError.set(null);
+    this.learning.gapSummary({ topN: 10 }).subscribe({
+      next: g => this.gaps.set({ ...g, most_common_gap_skills: g.most_common_gap_skills ?? [] }),
+      error: err => this.gapError.set(toApiError(err))
     });
   }
 

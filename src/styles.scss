@@ -172,6 +172,14 @@ a { color: var(--primary-dark); }button, input, select, textarea { font: inherit
 .pill-partial, .pill-warning { background: var(--partial-bg); color: var(--partial-text); }
 .pill-low, .pill-neutral { background: var(--low-bg); color: var(--low-text); }
 .pill-danger { background: var(--danger-bg); color: var(--danger-text); }
+.pill-orange { background: #FFE3CC; color: #8A3B00; }
+:root[data-theme='dark'] .pill-orange { background: #4A2A12; color: #FDBA74; }
+.pill-lightgreen { background: #E3F4DA; color: #2E6B16; }
+:root[data-theme='dark'] .pill-lightgreen { background: #1F3A17; color: #A7E08C; }
+.chip-prio-critical { background: var(--danger-bg); color: var(--danger-text); border-color: transparent; }
+.chip-prio-high { background: #FFE3CC; color: #8A3B00; border-color: transparent; }
+:root[data-theme='dark'] .chip-prio-high { background: #4A2A12; color: #FDBA74; }
+.chip-prio-low { background: var(--low-bg); color: var(--low-text); border-color: transparent; }
 
 .chip {
   display: inline-flex; align-items: center; gap: 6px;

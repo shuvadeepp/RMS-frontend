@@ -1,5 +1,5 @@
 import { DecisionValue } from '../models/decision.model';
-import { CountData, MatchCategory, MatchResult, SkillRef } from '../models/requirement.model';
+import { CountData, GapPriority, GapType, MatchCategory, MatchResult, RecommendationSource, RunTrigger, SkillRef } from '../models/requirement.model';
 import { TagCode } from '../models/tagged-people.model';
 
 export interface CategoryInfo {
@@ -109,6 +109,49 @@ export function statusPill(status: string | null | undefined): string {
   if (['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED'].includes(value)) return 'pill-danger';
   return 'pill-neutral';
 }
+
+// ---------- Skill gaps and learning ----------
+export const PRIORITY_ORDER: GapPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+
+export function priorityRank(priority: string | null | undefined): number {
+  const i = PRIORITY_ORDER.indexOf((priority ?? '') as GapPriority);
+  return i < 0 ? PRIORITY_ORDER.length : i;
+}
+
+// CRITICAL red, HIGH orange, MEDIUM amber, LOW grey.
+export function priorityInfo(priority: string | null | undefined): { label: string; css: string } {
+  switch ((priority ?? '').toUpperCase()) {
+    case 'CRITICAL': return { label: 'Critical', css: 'pill-danger' };
+    case 'HIGH': return { label: 'High', css: 'pill-orange' };
+    case 'MEDIUM': return { label: 'Medium', css: 'pill-warning' };
+    case 'LOW': return { label: 'Low', css: 'pill-neutral' };
+    default: return { label: humanise(priority), css: 'pill-neutral' };
+  }
+}
+
+export const GAP_TYPE_LABEL: Record<GapType, string> = { MISSING: 'Missing', BELOW_REQUIRED: 'Below required level' };
+
+export const SOURCE_INFO: Record<RecommendationSource, { label: string; css: string; tip: string | null }> = {
+  LK_REPOSITORY: { label: 'L&K approved', css: 'pill-success', tip: 'From the approved L&K learning repository.' },
+  AI_GENERATED: { label: 'AI suggestion', css: 'pill-info', tip: 'Written by AI. L&K must review it against approved learning resources.' },
+  RULE_BASED: { label: 'Standard template', css: 'pill-neutral', tip: 'Standard template text. L&K must review it.' },
+  MANUAL: { label: 'Manual', css: 'pill-neutral', tip: null }
+};
+
+export function sourceInfo(source: string | null | undefined): { label: string; css: string; tip: string | null } {
+  const key = (source ?? '') as RecommendationSource;
+  return key in SOURCE_INFO ? SOURCE_INFO[key] : { label: humanise(source) || 'Unknown source', css: 'pill-neutral', tip: null };
+}
+
+export function isRematch(trigger: RunTrigger | string | null | undefined): boolean {
+  return trigger === 'REMATCH_AFTER_LEARNING' || trigger === 'MANUAL_REMATCH';
+}
+
+// Roles allowed to review learning items / generate plans (the backend enforces both).
+export const REVIEW_ROLES = ['ADMIN', 'LK_ADMIN', 'SKILL_REVIEWER'];
+export const EVIDENCE_ROLES = ['ADMIN', 'LK_ADMIN', 'SKILL_REVIEWER', 'RESOURCE_MANAGER'];
+export const REMATCH_ROLES = ['USER', 'ADMIN', 'PROJECT_MANAGER', 'RESOURCE_MANAGER', 'LK_ADMIN'];
+export const GENERATE_ROLES = ['USER', 'ADMIN', 'PROJECT_MANAGER', 'LK_ADMIN', 'SKILL_REVIEWER'];
 
 export function humanise(value: string | null | undefined): string {
   if (!value) return '';

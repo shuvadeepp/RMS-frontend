@@ -41,7 +41,7 @@
     }
 
     <section class="card" aria-labelledby="skills-title">
-      <h2 id="skills-title" class="section-title">Skill gaps</h2>
+      <h2 id="skills-title" class="section-title">Skill gaps @if (report()?.matching_run_id) { <span class="muted small">Run {{ report()!.matching_run_id }}</span> }</h2>
       @if (reportError()) {
         <app-error-box [error]="reportError()!" (retry)="loadReport()" />
       } @else if (!report()) {
@@ -56,6 +56,7 @@
                 <span class="list-title">{{ r.name }}</span>
                 <span class="muted small">{{ r.mandatory ? 'Must-have' : 'Nice to have' }}</span>
                 <span class="spacer"></span>
+                @if (r.priority) { <span class="pill" [class]="priorityInfo(r.priority).css" [attr.title]="r.priorityReason">{{ priorityInfo(r.priority).label }}</span> }
                 <span class="status" [class]="r.state">{{ statusText(r) }}</span>
               </div>
               @if (r.level !== null) {
@@ -82,17 +83,25 @@
       <div class="card-head">
         <h2 id="learn-title" class="section-title">Suggested learning</h2>
       </div>
-      @if (report() && recommendations().length === 0) {
+      @if (report() && recommendations().length) {
+        <app-learning-list [items]="recommendations()" [requirementId]="requirementId()"(changed)="onRecommendationChanged($event)" />
+      }
+      @if (report() && canGenerate() && uncoveredCount() > 0) {
         <div class="state empty-learn">
-          <span>No learning plan yet.</span>
+          <span>{{ recommendations().length ? uncoveredCount() + ' gap(s) have no learning plan yet.' : 'No learning plan yet.' }}</span>
           <button type="button" class="btn btn-primary btn-sm" [disabled]="generating()" (click)="generate()">
             @if (generating()) { <span class="spinner"></span> } @else { <app-icon name="sparkle" [size]="16" /> }
-            Generate with AI
+            Generate learning plan
           </button>
         </div>
-      } @else if (report()) {
-        <app-learning-list [items]="recommendations()" (changed)="onRecommendationChanged($event)" />
       }
+    </section>
+
+    <section class="card" aria-labelledby="path-title">
+      <div class="card-head">
+        <h2 id="path-title" class="section-title">Learning pathway</h2>
+      </div>
+      <app-learning-pathway [matchingResultId]="id" [refresh]="report()" />
     </section>
 
     <div class="actions">

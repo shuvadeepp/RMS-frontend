@@ -2,14 +2,16 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } 
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiError, toApiError } from '../../core/error-message';
 import { ToastService } from '../../core/toast.service';
-import { LearningRecommendation, MatchResult, SkillGapReport, SkillObject } from '../../models/requirement.model';
+import { GapPriority, LearningRecommendation, MatchResult, SkillGapReport, SkillObject } from '../../models/requirement.model';
+import { AuthService } from '../../services/auth.service';
 import { LearningService } from '../../services/learning.service';
 import { MatchStateService } from '../../services/match-state.service';
 import { DecisionControlsComponent } from '../../shared/decision-controls.component';
 import { ErrorBoxComponent } from '../../shared/error-box.component';
 import { IconComponent } from '../../shared/icon.component';
-import { availabilityOf, categoryOf, initials, skillName, skillNames } from '../../shared/labels';
+import { GENERATE_ROLES, availabilityOf, categoryOf, initials, priorityInfo, skillName, skillNames } from '../../shared/labels';
 import { LearningListComponent } from '../../shared/learning-list.component';
+import { LearningPathwayComponent } from '../../shared/learning-pathway.component';
 import { ScoreRingComponent } from '../../shared/score-ring.component';
 
 interface SkillRow {
@@ -19,11 +21,13 @@ interface SkillRow {
   level: number | null;
   state: 'meets' | 'below' | 'missing';
   note: string | null;
+  priority: GapPriority | null;
+  priorityReason: string | null;
 }
 
 @Component({
   selector: 'app-candidate',
-  imports: [RouterLink, IconComponent, ScoreRingComponent, ErrorBoxComponent, DecisionControlsComponent, LearningListComponent],
+  imports: [RouterLink, IconComponent, ScoreRingComponent, ErrorBoxComponent, DecisionControlsComponent, LearningListComponent, LearningPathwayComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './candidate.component.html',
   styleUrl: './candidate.component.scss'
@@ -32,6 +36,7 @@ export class CandidateComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private learning = inject(LearningService);
   private toast = inject(ToastService);
+  private auth = inject(AuthService);
   readonly state = inject(MatchStateService);
 
   readonly id = Number(this.route.snapshot.paramMap.get('matchingResultId'));
@@ -61,7 +66,7 @@ export class CandidateComponent implements OnInit {
       const level = g.current_level ?? 0;
       const need = g.required_level ?? 0;
       const state: SkillRow['state'] = level <= 0 ? 'missing' : level < need ? 'below' : 'meets';
-      return { name: g.skill_name, mandatory: g.mandatory, required: g.required_level, level: g.current_level, state, note: g.gap_description ?? null };
+      return { name: g.skill_name, mandatory: g.mandatory, required: g.required_level, level: g.current_level, state, note: g.gap_description ?? null, priority: g.priority ?? null, priorityReason: g.priority_reason ?? null };
     });
     const seen = new Set(rows.map(r => r.name.toLowerCase()));
     for (const ref of this.match()?.strengths?.matching_skills ?? []) {
@@ -75,13 +80,25 @@ export class CandidateComponent implements OnInit {
         required: obj?.required_proficiency ?? obj?.minimum_proficiency ?? req?.minimum_proficiency ?? null,
         level: obj?.current_proficiency ?? obj?.employee_proficiency ?? obj?.proficiency ?? null,
         state: 'meets',
-        note: null
+        note: null,
+        priority: null,
+        priorityReason: null
       });
     }
     return rows;
   });
   readonly transferable = computed(() => skillNames(this.match()?.strengths?.transferable_skills));
   readonly recommendations = computed(() => this.report()?.learning_recommendations ?? []);
+  readonly canGenerate = computed(() => this.auth.hasAnyRole(...GENERATE_ROLES));
+  // Gaps with no learning recommendation yet (matched by gap id, or by skill name for old data).
+  readonly uncoveredCount = computed(() => {
+    const recs = this.recommendations();
+    return (this.report()?.gaps ?? []).filter(g => !recs.some(l =>
+      g.skill_gap_id != null && l.skill_gap_id != null
+        ? l.skill_gap_id === g.skill_gap_id
+        : l.skill_name.toLowerCase() === g.skill_name.toLowerCase())).length;
+  });
+  readonly priorityInfo = priorityInfo;
 
   ngOnInit(): void {
     this.load();

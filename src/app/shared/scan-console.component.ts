@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { MatchingRun, MatchingRunProgress } from '../models/requirement.model';
+import { isRematch } from './labels';
 
 // Which part of the search the page is in while the console is shown.
 export type ScanPhase = 'submitting' | 'running' | 'loading-results';
@@ -47,6 +48,9 @@ function stageIndexOf(stage: string | null | undefined): number | null {
         </div>
         <p class="run-meta">
           @if (runId(); as id) { Run #{{ id }} } @else { Starting }
+          @if (isRematch(run()?.run_trigger)) {
+            · Rematch@if (run()?.previous_run_id) { (replaces run {{ run()?.previous_run_id }}) }
+          }
           · <span class="num">{{ elapsedText() }}</span> elapsed
         </p>
       </header>
@@ -212,6 +216,7 @@ export class ScanConsoleComponent {
   readonly phase = input.required<ScanPhase>();
   readonly runId = input<number | null>(null);
   readonly run = input<MatchingRun | null>(null);
+  readonly isRematch = isRematch;
   readonly employeesSent = input<number | null>(null);
   readonly skills = input<string[]>([]);
   readonly requirementSaved = input(false);

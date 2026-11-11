@@ -33,6 +33,7 @@ import {
   availabilityOf,
   categoryOf,
   formatDayMonYear,
+  isRematch,
   matchStatus,
   skillNames
 } from '../../shared/labels';
@@ -205,6 +206,7 @@ export class FindPeopleComponent implements OnInit {
     () => new Map((this.tagged()?.included ?? []).filter(p => p.employee_code).map(p => [p.employee_code!, p]))
   );
 
+  readonly isRematch = isRematch;
   readonly categoryOf = categoryOf;
   readonly availabilityOf = availabilityOf;
   readonly formatDayMonYear = formatDayMonYear;

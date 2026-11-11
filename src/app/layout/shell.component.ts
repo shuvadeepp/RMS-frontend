@@ -12,6 +12,7 @@ interface NavItem {
   path: string;
   label: string;
   icon: IconName;
+  roles?: string[]; // shown only to these roles; all roles when omitted
 }
 
 @Component({
@@ -36,6 +37,7 @@ export class ShellComponent {
     { path: '/skill-growth', label: 'Skill Growth', icon: 'trending' },
     { path: '/reports', label: 'Reports', icon: 'chart' }
   ];
+  readonly visibleNav = computed(() => this.nav.filter(i => !i.roles || this.auth.hasAnyRole(...i.roles)));
 
   readonly menuOpen = signal(false);
   readonly user = this.auth.user;
