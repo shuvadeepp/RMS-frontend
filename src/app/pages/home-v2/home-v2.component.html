@@ -1,0 +1,240 @@
+<div class="cc">
+  <!-- 1. Header -->
+  <header class="cc-head">
+    <div class="cc-head-text">
+      <p class="eyebrow">{{ eyebrow }}</p>
+      <h1 class="page-title">Good {{ greeting }}{{ fullName() ? ', ' + fullName() : '' }}</h1>
+      @if (subline()) { <p class="page-sub">{{ subline() }}</p> }
+    </div>
+    <div class="cc-head-actions">
+      <a class="btn" routerLink="/reports">Export report</a>
+    </div>
+  </header>
+
+  <!-- 2. KPI row -->
+  <section class="cc-kpis" aria-label="Key numbers">
+    @for (k of kpis(); track k.label) {
+      <div class="card kpi" [class.kpi-amber]="k.amber">
+        <span class="kpi-label">{{ k.label }}</span>
+        @switch (summary().state) {
+          @case ('loading') {
+            <span class="skel skel-lg" role="status" aria-label="Loading"></span>
+            <span class="skel skel-sm"></span>
+          }
+          @case ('error') {
+            <span class="muted small">Could not load.</span>
+            <button type="button" class="link-btn small" (click)="loadSummary()">Retry</button>
+          }
+          @default {
+            <span class="kpi-value">{{ k.value ?? '–' }}</span>
+            <span class="muted small">{{ k.sub }}</span>
+            @if (k.amber) {
+              <a class="btn btn-sm kpi-btn" routerLink="/decisions">Review now</a>
+            }
+          }
+        }
+      </div>
+    }
+  </section>
+
+  <!-- 3. Middle row -->
+  <div class="cc-row">
+    <section class="card hero" aria-labelledby="hero-title">
+      <p class="hero-eyebrow"><app-icon name="sparkle" [size]="16" /> AI matching</p>
+      <h2 id="hero-title" class="hero-title">Describe the role. Get the best people in under 90 seconds.</h2>
+      <a class="hero-input" routerLink="/find-people" aria-label="Open Find People to describe a role">
+        <app-icon name="search" [size]="18" />
+        <span>e.g. Senior Angular developer, 5+ years, available next month</span>
+      </a>
+      <div class="hero-foot">
+        <a class="btn hero-btn" routerLink="/find-people">Start AI search</a>
+        @if (summary().state === 'ready') {
+          <span class="hero-last">{{ lastRunLine() }}</span>
+        } @else if (summary().state === 'loading') {
+          <span class="skel skel-line hero-skel"></span>
+        }
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="util-title">
+      <h2 id="util-title" class="section-title cc-title">Team utilization</h2>
+      @switch (summary().state) {
+        @case ('loading') {
+          <div class="skel skel-donut" role="status" aria-label="Loading"></div>
+        }
+        @case ('error') {
+          <ng-container *ngTemplateOutlet="errorTpl; context: { retry: 'summary' }" />
+        }
+        @default {
+          @if (slices().length === 0) {
+            <p class="empty">Nothing here yet</p>
+          } @else {
+            <div class="donut-wrap">
+              <svg class="donut" viewBox="0 0 140 140" role="img"
+                   [attr.aria-label]="'Team utilization: ' + slices()[0].value + ' free this month, ' + slices()[1].value + ' not free this month'">
+                <circle cx="70" cy="70" [attr.r]="donutRadius" fill="none" stroke="var(--low-bg)" stroke-width="16" />
+                @for (s of slices(); track s.label) {
+                  @if (s.value > 0) {
+                    <circle cx="70" cy="70" [attr.r]="donutRadius" fill="none" [attr.stroke]="s.colour" stroke-width="16"
+                            [attr.stroke-dasharray]="s.dash + ' ' + (donutLength - s.dash)"
+                            [attr.stroke-dashoffset]="-s.offset" transform="rotate(-90 70 70)" />
+                  }
+                }
+                <text x="70" y="68" text-anchor="middle" class="donut-num">{{ freePercent() }}%</text>
+                <text x="70" y="86" text-anchor="middle" class="donut-cap">free</text>
+              </svg>
+              <ul class="legend">
+                @for (s of slices(); track s.label) {
+                  <li><span class="swatch" [style.background]="s.colour"></span>{{ s.label }} <strong>{{ s.value }}</strong></li>
+                }
+              </ul>
+            </div>
+            <p class="muted small">Allocated vs approved-not-allocated: Not available yet</p>
+          }
+        }
+      }
+    </section>
+
+    <section class="card" aria-labelledby="pipe-title">
+      <h2 id="pipe-title" class="section-title cc-title">Hiring pipeline</h2>
+      @switch (summary().state) {
+        @case ('loading') {
+          <div class="skel-stack" role="status" aria-label="Loading">
+            @for (i of [1, 2, 3, 4, 5]; track i) { <span class="skel skel-line"></span> }
+          </div>
+        }
+        @case ('error') {
+          <ng-container *ngTemplateOutlet="errorTpl; context: { retry: 'summary' }" />
+        }
+        @default {
+          <ul class="bars">
+            @for (b of pipeline(); track b.label) {
+              <li class="bar-row">
+                <span class="bar-label">{{ b.label }}</span>
+                @if (b.value === null) {
+                  <span class="muted small bar-na">Not available yet</span>
+                } @else {
+                  <span class="bar-track" aria-hidden="true"><span class="bar-fill" [style.width.%]="b.percent"></span></span>
+                  <strong class="bar-val">{{ b.value }}</strong>
+                }
+              </li>
+            }
+          </ul>
+        }
+      }
+    </section>
+  </div>
+
+  <!-- 4. Bottom row -->
+  <div class="cc-row">
+    <section class="card" aria-labelledby="dec-title">
+      <div class="card-head">
+        <h2 id="dec-title" class="section-title">Needs your decision</h2>
+        <a class="back-link small" routerLink="/decisions">See all <app-icon name="arrow-right" [size]="16" /></a>
+      </div>
+      @switch (decisions().state) {
+        @case ('loading') {
+          <div class="skel-stack" role="status" aria-label="Loading">
+            @for (i of skeletonRows; track i) { <span class="skel skel-row"></span> }
+          </div>
+        }
+        @case ('error') {
+          <ng-container *ngTemplateOutlet="errorTpl; context: { retry: 'decisions' }" />
+        }
+        @default {
+          @if (decisionItems().length === 0) {
+            <p class="empty">Nothing here yet</p>
+          } @else {
+            <ul class="people">
+              @for (p of decisionItems(); track p.key) {
+                <li>
+                  <a class="person" routerLink="/decisions" [queryParams]="p.requirementId ? { requirementId: p.requirementId } : null">
+                    <span class="avatar" aria-hidden="true">{{ p.initials }}</span>
+                    <span class="person-main">
+                      <span class="person-name">{{ p.name }}</span>
+                      @if (p.subtitle) { <span class="muted small">{{ p.subtitle }}</span> }
+                    </span>
+                    @if (p.score !== null) {
+                      <span class="person-score" [attr.aria-label]="'Match score ' + p.score">{{ p.score }}</span>
+                    } @else { <span></span> }
+                    <span class="pill" [class]="p.statusCss">{{ p.statusLabel }}</span>
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        }
+      }
+    </section>
+
+    <section class="card" aria-labelledby="bench-title">
+      <h2 id="bench-title" class="section-title cc-title">Skills available on bench</h2>
+      @switch (bench().state) {
+        @case ('loading') {
+          <div class="skel-stack" role="status" aria-label="Loading">
+            @for (i of [1, 2, 3, 4]; track i) { <span class="skel skel-line"></span> }
+          </div>
+        }
+        @case ('error') {
+          <p class="empty">Not available yet</p>
+          <button type="button" class="btn btn-sm" (click)="retryLoad('bench')">
+            <app-icon name="refresh" [size]="16" /> Retry
+          </button>
+        }
+        @default {
+          @if (benchRows().length === 0) {
+            <p class="empty">Nothing here yet</p>
+          } @else {
+            <ul class="bars">
+              @for (b of benchRows(); track b.label) {
+                <li class="bar-row">
+                  <span class="bar-label">{{ b.label }}</span>
+                  <span class="bar-track" aria-hidden="true"><span class="bar-fill" [style.width.%]="b.percent"></span></span>
+                  <strong class="bar-val">{{ b.count }}</strong>
+                </li>
+              }
+            </ul>
+          }
+        }
+      }
+    </section>
+
+    <section class="card" aria-labelledby="act-title">
+      <h2 id="act-title" class="section-title cc-title">Recent activity</h2>
+      @switch (activity().state) {
+        @case ('loading') {
+          <div class="skel-stack" role="status" aria-label="Loading">
+            @for (i of skeletonRows; track i) { <span class="skel skel-row"></span> }
+          </div>
+        }
+        @case ('error') {
+          <ng-container *ngTemplateOutlet="errorTpl; context: { retry: 'activity' }" />
+        }
+        @default {
+          @if (activityItems().length === 0) {
+            <p class="empty">Nothing here yet</p>
+          } @else {
+            <ul class="feed">
+              @for (a of activityItems(); track a.key) {
+                <li>
+                  <span class="dot" [class]="'dot dot-' + a.colour" aria-hidden="true"></span>
+                  <span class="feed-text">{{ a.text }}</span>
+                  @if (a.when) { <span class="muted small feed-when">{{ a.when }}</span> }
+                </li>
+              }
+            </ul>
+          }
+        }
+      }
+    </section>
+  </div>
+</div>
+
+<ng-template #errorTpl let-retry="retry">
+  <div class="card-error" role="alert">
+    <span>{{ errorTitle(retry) }}</span>
+    <button type="button" class="btn btn-sm" (click)="retryLoad(retry)">
+      <app-icon name="refresh" [size]="16" /> Retry
+    </button>
+  </div>
+</ng-template>

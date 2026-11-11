@@ -96,6 +96,20 @@
   height: 56px; padding: 0 40px;
   background: var(--bg); border-bottom: 1px solid var(--border);
 }
+.topbar-actions { justify-self: end; display: flex; align-items: center; gap: 10px; }
+
+.view-switch {
+  display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px;
+  background: var(--card); border: 1px solid var(--input-border);
+  button {
+    height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent;
+    color: var(--ink); font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap;
+    &:hover:not(:disabled):not(.active) { background: var(--primary-tint); }
+    &.active { background: var(--primary); color: #fff; }
+    &:disabled { opacity: .55; cursor: not-allowed; }
+  }
+}
+
 .theme-toggle {
   justify-self: end; display: inline-flex; align-items: center; gap: 8px;
   height: 38px; padding: 0 14px; border-radius: 999px;

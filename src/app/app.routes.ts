@@ -9,7 +9,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     canActivateChild: [authGuard],
     children: [
-      { path: 'home', loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent) },
+      { path: 'home', loadComponent: () => import('./pages/home/home-switch.component').then(m => m.HomeSwitchComponent) },
       { path: 'find-people', loadComponent: () => import('./pages/find-people/find-people.component').then(m => m.FindPeopleComponent) },
       { path: 'candidate/:matchingResultId', loadComponent: () => import('./pages/candidate/candidate.component').then(m => m.CandidateComponent) },
       { path: 'decisions', loadComponent: () => import('./pages/decisions/decisions.component').then(m => m.DecisionsComponent) },

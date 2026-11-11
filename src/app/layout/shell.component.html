@@ -49,11 +49,22 @@
     <header class="topbar">
       <span class="topbar-spacer" aria-hidden="true"></span>
       <app-global-search />
-      <button type="button" class="theme-toggle" (click)="theme.toggle()"
-              [attr.aria-pressed]="theme.isDark()">
-        <app-icon [name]="theme.isDark() ? 'sun' : 'moon'" [size]="18" />
-        <span>{{ theme.isDark() ? 'Light mode' : 'Dark mode' }}</span>
-      </button>
+      <div class="topbar-actions">
+        <div class="view-switch" role="group" aria-label="Home view"
+             [attr.title]="onHome() ? null : 'Applies to Home only'">
+          <button type="button" [class.active]="viewMode.homeView() === 'new'"
+                  [attr.aria-pressed]="viewMode.homeView() === 'new'" [disabled]="!onHome()"
+                  (click)="viewMode.setHomeView('new')">New view</button>
+          <button type="button" [class.active]="viewMode.homeView() === 'classic'"
+                  [attr.aria-pressed]="viewMode.homeView() === 'classic'" [disabled]="!onHome()"
+                  (click)="viewMode.setHomeView('classic')">Classic view</button>
+        </div>
+        <button type="button" class="theme-toggle" (click)="theme.toggle()"
+                [attr.aria-pressed]="theme.isDark()">
+          <app-icon [name]="theme.isDark() ? 'sun' : 'moon'" [size]="18" />
+          <span>{{ theme.isDark() ? 'Light mode' : 'Dark mode' }}</span>
+        </button>
+      </div>
     </header>
 
     <main id="main" class="main" tabindex="-1">

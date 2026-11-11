@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { ThemeService } from '../core/theme.service';
+import { ViewModeService } from '../core/view-mode.service';
 import { GlobalSearchComponent } from '../shared/global-search.component';
 import { IconComponent, IconName } from '../shared/icon.component';
 import { ToastsComponent } from '../shared/toasts.component';
@@ -14,6 +15,10 @@ interface NavItem {
   label: string;
   icon: IconName;
   roles?: string[]; // shown only to these roles; all roles when omitted
+}
+
+function isHomeUrl(url: string): boolean {
+  return /^\/home(?:[/?#]|$)/.test(url) || url === '/';
 }
 
 @Component({
@@ -40,15 +45,23 @@ export class ShellComponent {
   ];
   readonly visibleNav = computed(() => this.nav.filter(i => !i.roles || this.auth.hasAnyRole(...i.roles)));
 
+  readonly viewMode = inject(ViewModeService);
+  private router = inject(Router);
+  // The Home view switch only applies on the Home screen.
+  readonly onHome = signal(isHomeUrl(this.router.url));
+
   readonly menuOpen = signal(false);
   readonly user = this.auth.user;
   readonly userInitials = computed(() => initials(this.user()?.fullName ?? this.user()?.username));
   readonly roleLabel = computed(() => humanise(this.user()?.role));
 
   constructor() {
-    inject(Router).events
-      .pipe(filter(e => e instanceof NavigationEnd), takeUntilDestroyed())
-      .subscribe(() => this.menuOpen.set(false));
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd), takeUntilDestroyed())
+      .subscribe(e => {
+        this.menuOpen.set(false);
+        this.onHome.set(isHomeUrl(e.urlAfterRedirects));
+      });
   }
 
   signOut(): void {

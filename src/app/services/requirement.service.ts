@@ -4,6 +4,8 @@ import { Observable, map } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import {
   AuditLog,
+  BenchSkillsResponse,
+  PendingDecisionsResponse,
   DashboardSummary,
   MatchResult,
   MatchingRun,
@@ -74,6 +76,14 @@ export class RequirementService {
 
   getDashboardSummary(): Observable<DashboardSummary> {
     return this.api.get<DashboardSummary>('/api/dashboard/summary');
+  }
+
+  getPendingDecisions(limit = 5): Observable<PendingDecisionsResponse> {
+    return this.api.get<PendingDecisionsResponse>('/api/decisions/pending', { limit });
+  }
+
+  getBenchSkills(limit = 4): Observable<BenchSkillsResponse> {
+    return this.api.get<BenchSkillsResponse>('/api/dashboard/bench-skills', { limit });
   }
 
   getAuditLogs(limit = 50, entity?: string, recordId?: number): Observable<AuditLog[]> {

@@ -291,3 +291,35 @@ export interface AuditLog {
   action_timestamp?: string | null;
   details?: string | null;
 }
+
+// ---------- Home: pending decisions and bench skills (all fields optional) ----------
+export interface PendingDecisionItem {
+  matching_result_id?: number | null;
+  requirement_id?: number | null;
+  employee_id?: number | null;
+  employee_code?: string | null;
+  employee_name?: string | null;
+  designation?: string | null;
+  role_name?: string | null;
+  project_name?: string | null;
+  score?: number | null;
+  status?: string | null; // SHORTLISTED | APPROVED_PENDING
+}
+
+export interface PendingDecisionsResponse {
+  total?: number | null;
+  oldest_waiting_days?: number | null;
+  items?: PendingDecisionItem[] | null;
+}
+
+export interface BenchSkill {
+  skill_name?: string | null;
+  skill?: string | null;
+  name?: string | null;
+  count?: number | null;
+  employee_count?: number | null;
+  available_count?: number | null;
+}
+
+// Either a bare list or an object wrapping one.
+export type BenchSkillsResponse = BenchSkill[] | { items?: BenchSkill[] | null; skills?: BenchSkill[] | null };
