@@ -44,7 +44,7 @@ export class ShellComponent {
       title: 'Manage Master',
       items: [
         { path: '/projects', label: 'Projects', icon: 'folder' },
-        { path: '/skill', label: 'Skills', icon: 'users' },
+        { path: '/skills', label: 'Skills', icon: 'users' },
         { path: '/people', label: 'Employees', icon: 'users' },
       ]
     },
