@@ -39,6 +39,7 @@ export class ShellComponent {
     { path: '/find-people', label: 'Find People (AI)', icon: 'sparkle' },
     { path: '/people', label: 'People & Skills', icon: 'users' },
     { path: '/decisions', label: 'Decisions', icon: 'check' },
+    { path: '/skills', label: 'Skills', icon: 'list' },
     { path: '/tagged-people', label: 'Tagged People', icon: 'tag' },
     { path: '/skill-growth', label: 'Skill Growth', icon: 'trending' },
     { path: '/reports', label: 'Reports', icon: 'chart' }

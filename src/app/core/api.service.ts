@@ -24,6 +24,10 @@ export class ApiService {
     return this.http.put<T>(this.url(path), body);
   }
 
+  delete<T = void>(path: string): Observable<T> {
+    return this.http.delete<T>(this.url(path));
+  }
+
   // Binary download (Excel). The interceptor still adds the Bearer header.
   getBlob(path: string, query?: Query): Observable<HttpResponse<Blob>> {
     return this.http.get(this.url(path), { params: this.toParams(query), responseType: 'blob', observe: 'response' });
