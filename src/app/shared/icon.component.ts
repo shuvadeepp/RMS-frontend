@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 export type IconName =
   | 'sparkle' | 'home' | 'search' | 'folder' | 'users' | 'check' | 'trending' | 'chart'
   | 'logout' | 'menu' | 'close' | 'arrow-left' | 'arrow-right' | 'plus' | 'chevron-down'
-  | 'alert' | 'refresh' | 'calendar' | 'clock' | 'x' | 'eye' | 'eye-off' | 'tag' | 'unlock' | 'sun' | 'moon';
+  | 'alert' | 'refresh' | 'calendar' | 'clock' | 'x' | 'eye' | 'eye-off' | 'tag' | 'unlock' | 'sun' | 'moon' | 'list';
 
 // Inline SVG icons (stroke style). Decorative unless a label is given.
 @Component({
@@ -39,6 +39,7 @@ export type IconName =
         @case ('clock') { <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/> }
         @case ('tag') { <path d="M3 12.6V4.5A1.5 1.5 0 0 1 4.5 3h8.1a1.5 1.5 0 0 1 1.06.44l6.9 6.9a1.5 1.5 0 0 1 0 2.12l-8.1 8.1a1.5 1.5 0 0 1-2.12 0l-6.9-6.9A1.5 1.5 0 0 1 3 12.6z"/><circle cx="8" cy="8" r="1.5"/> }
         @case ('sun') { <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/> }
+        @case ('list') { <path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/> }
         @case ('moon') { <path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/> }
         @case ('unlock') { <rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/> }
       }

@@ -40,3 +40,6 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+_legacy-ui/api.config.ts
+src/environments/environment.ts
