@@ -10,6 +10,7 @@ import { ErrorBoxComponent } from '../../shared/error-box.component';
 import { IconComponent } from '../../shared/icon.component';
 
 const MAX_LEN = 100;
+const CATEGORIES = ['Backend', 'Database', 'Frontend', 'Data', 'DevOps', 'Testing', 'Design'];
 
 // Skills master list. Everyone can read; ADMIN and LK_ADMIN can add, edit and delete.
 @Component({
@@ -44,7 +45,10 @@ const MAX_LEN = 100;
               </div>
               <div class="field">
                 <label for="sk-cat">Category</label>
-                <input id="sk-cat" name="skill_category" class="input" maxlength="100" [(ngModel)]="form.skill_category" />
+                <select id="sk-cat" name="skill_category" class="select" [(ngModel)]="form.skill_category">
+                  <option value="">No category</option>
+                  @for (c of categoryOptions(); track c) { <option [value]="c">{{ c }}</option> }
+                </select>
                 @if (err('skill_category'); as e) { <span class="field-error">{{ e }}</span> }
               </div>
             </div>
@@ -75,13 +79,14 @@ const MAX_LEN = 100;
         <div class="card table-wrap">
           <table class="table">
             <thead>
-              <tr><th>ID</th><th>Skill</th>@if (canManage()) { <th>Actions</th> }</tr>
+              <tr><th>ID</th><th>Skill</th><th>Category</th>@if (canManage()) { <th>Actions</th> }</tr>
             </thead>
             <tbody>
               @for (s of filtered(); track s.skill_id) {
                 <tr>
                   <td>{{ s.skill_id }}</td>
                   <td>{{ s.skill_name }}</td>
+                  <td>{{ s.skill_category || '-' }}</td>
                   @if (canManage()) {
                     <td>
                       @if (confirming()?.skill_id === s.skill_id) {
@@ -132,7 +137,9 @@ export class SkillsComponent {
   readonly q = signal('');
   readonly filtered = computed(() => {
     const term = this.q().trim().toLowerCase();
-    return term ? this.skills().filter(s => s.skill_name.toLowerCase().includes(term)) : this.skills();
+    return term
+      ? this.skills().filter(s => s.skill_name.toLowerCase().includes(term) || (s.skill_category ?? '').toLowerCase().includes(term))
+      : this.skills();
   });
   readonly loading = signal(false);
   readonly error = signal<ApiError | null>(null);
@@ -160,6 +167,12 @@ export class SkillsComponent {
       next: list => { this.skills.set(list ?? []); this.loading.set(false); },
       error: err => { this.error.set(toApiError(err)); this.loading.set(false); }
     });
+  }
+
+  // The fixed list, plus the skill's current category if it is not in the list (so editing never loses it).
+  categoryOptions(): string[] {
+    const current = this.form.skill_category;
+    return current && !CATEGORIES.includes(current) ? [...CATEGORIES, current] : CATEGORIES;
   }
 
   err(field: string): string | null {
