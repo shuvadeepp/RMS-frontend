@@ -53,6 +53,18 @@ export interface Project {
   projectCode: string;
   projectName: string;
   projectStatus: string;
+  projectDomain?: string | null;
+  projectDescription?: string | null;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+export interface NewProject {
+  projectCode: string;
+  projectName: string;
+  projectDomain: string | null;
+  projectDescription: string | null;
+  projectStatus: string;
   startDate: string | null;
   endDate: string | null;
 }

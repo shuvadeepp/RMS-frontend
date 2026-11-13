@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 import { ApiError, toApiError } from '../../core/error-message';
 import { Project } from '../../models/employee.model';
 import { Requirement } from '../../models/requirement.model';
@@ -20,6 +21,9 @@ import { formatDate, humanise, statusPill } from '../../shared/labels';
           <p class="eyebrow">Projects</p>
           <h1 class="page-title">Projects and their needs</h1>
         </div>
+        @if (isAdmin()) {
+          <a class="btn btn-primary" routerLink="/projects/new"><app-icon name="plus" [size]="18" /> Add project</a>
+        }
         <a class="btn btn-primary" routerLink="/find-people"><app-icon name="sparkle" [size]="18" /> New need</a>
       </header>
 
@@ -104,6 +108,7 @@ import { formatDate, humanise, statusPill } from '../../shared/labels';
   `
 })
 export class ProjectsComponent implements OnInit {
+  readonly isAdmin = inject(AuthService).isAdmin;
   private lookups = inject(LookupService);
   private requirementsApi = inject(RequirementService);
 

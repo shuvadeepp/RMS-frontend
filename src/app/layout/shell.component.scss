@@ -35,6 +35,10 @@
 .sidebar-body { display: flex; flex-direction: column; flex: 1; margin-top: 28px; min-height: 0; }
 
 .nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.nav-section-title {
+  margin: 18px 12px 6px; font-size: 11px; font-weight: 800; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--nav-text); opacity: .65;
+}
 .nav-link {
   display: flex; align-items: center; gap: 12px;
   padding: 11px 12px; border-radius: 10px;

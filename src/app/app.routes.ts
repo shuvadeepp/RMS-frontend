@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth.guard';
+import { adminGuard, authGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
@@ -13,6 +13,8 @@ export const routes: Routes = [
       { path: 'find-people', loadComponent: () => import('./pages/find-people/find-people.component').then(m => m.FindPeopleComponent) },
       { path: 'candidate/:matchingResultId', loadComponent: () => import('./pages/candidate/candidate.component').then(m => m.CandidateComponent) },
       { path: 'decisions', loadComponent: () => import('./pages/decisions/decisions.component').then(m => m.DecisionsComponent) },
+      { path: 'projects/new', canActivate: [adminGuard],
+        loadComponent: () => import('./pages/projects/add-project.component').then(m => m.AddProjectComponent) },
       { path: 'projects', loadComponent: () => import('./pages/projects/projects.component').then(m => m.ProjectsComponent) },
       { path: 'people', loadComponent: () => import('./pages/people/people.component').then(m => m.PeopleComponent) },
       { path: 'skill-growth', loadComponent: () => import('./pages/skill-growth/skill-growth.component').then(m => m.SkillGrowthComponent) },

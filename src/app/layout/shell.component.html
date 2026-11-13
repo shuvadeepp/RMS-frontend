@@ -20,15 +20,26 @@
     <div class="sidebar-body" id="main-nav">
       <nav aria-label="Main">
         <ul class="nav">
-          @for (item of visibleNav(); track item.path) {
-            <li>
-              <a class="nav-link" [class.ai-shine]="item.path === '/find-people'" [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page">
-                <app-icon [name]="item.icon" />
-                <span>{{ item.label }}</span>
-              </a>
-            </li>
-          }
+          <li>
+            <a class="nav-link" [routerLink]="homeItem.path" routerLinkActive="active" ariaCurrentWhenActive="page">
+              <app-icon [name]="homeItem.icon" />
+              <span>{{ homeItem.label }}</span>
+            </a>
+          </li>
         </ul>
+        @for (section of visibleSections(); track section.title) {
+          <div class="nav-section-title">{{ section.title }}</div>
+          <ul class="nav">
+            @for (item of section.items; track item.path) {
+              <li>
+                <a class="nav-link" [class.ai-shine]="item.path === '/find-people'" [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page">
+                  <app-icon [name]="item.icon" />
+                  <span>{{ item.label }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        }
       </nav>
 
       <div class="user-chip">

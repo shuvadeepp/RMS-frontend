@@ -17,6 +17,11 @@ interface NavItem {
   roles?: string[]; // shown only to these roles; all roles when omitted
 }
 
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
 function isHomeUrl(url: string): boolean {
   return /^\/home(?:[/?#]|$)/.test(url) || url === '/';
 }
@@ -33,17 +38,33 @@ export class ShellComponent {
   readonly theme = inject(ThemeService);
 
   // Every item is shown to every role: the backend does not enforce roles yet.
-  readonly nav: NavItem[] = [
-    { path: '/home', label: 'Home', icon: 'home' },
-    { path: '/projects', label: 'Projects', icon: 'folder' },
-    { path: '/find-people', label: 'Find People (AI)', icon: 'sparkle' },
-    { path: '/people', label: 'People & Skills', icon: 'users' },
-    { path: '/decisions', label: 'Decisions', icon: 'check' },
-    { path: '/tagged-people', label: 'Tagged People', icon: 'tag' },
-    { path: '/skill-growth', label: 'Skill Growth', icon: 'trending' },
-    { path: '/reports', label: 'Reports', icon: 'chart' }
+  readonly homeItem: NavItem = { path: '/home', label: 'Dashboard', icon: 'home' };
+  readonly sections: NavSection[] = [
+    {
+      title: 'Manage Master',
+      items: [
+        { path: '/projects', label: 'Projects', icon: 'folder' },
+        { path: '/people', label: 'People & Skills', icon: 'users' }
+      ]
+    },
+    {
+      title: 'Manage Talents',
+      items: [
+        { path: '/find-people', label: 'Find People (AI)', icon: 'sparkle' },
+        { path: '/decisions', label: 'Decisions', icon: 'check' },
+        { path: '/tagged-people', label: 'Tagged People', icon: 'tag' },
+        { path: '/skill-growth', label: 'Skill Growth', icon: 'trending' }
+      ]
+    },
+    {
+      title: 'Manage Reports',
+      items: [{ path: '/reports', label: 'Reports', icon: 'chart' }]
+    }
   ];
-  readonly visibleNav = computed(() => this.nav.filter(i => !i.roles || this.auth.hasAnyRole(...i.roles)));
+  readonly visibleSections = computed(() =>
+    this.sections
+      .map(s => ({ ...s, items: s.items.filter(i => !i.roles || this.auth.hasAnyRole(...i.roles)) }))
+      .filter(s => s.items.length > 0));
 
   readonly viewMode = inject(ViewModeService);
   private router = inject(Router);

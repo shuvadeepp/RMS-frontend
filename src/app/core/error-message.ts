@@ -25,7 +25,7 @@ export function toApiError(error: unknown): ApiError {
     return {
       status: 0,
       title: 'Cannot reach the server.',
-      detail: 'Check that the backend is running on port 8050 and that CORS is enabled.',
+      detail: 'Check that the backend is running on port 8090 and that CORS is enabled.',
       rootCause: null,
       retryable: true
     };
